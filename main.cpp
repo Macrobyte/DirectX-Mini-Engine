@@ -1,3 +1,5 @@
+#pragma comment(lib, "dxguid.lib")
+
 #include <iostream>
 #include <random>
 
@@ -9,6 +11,8 @@
 #include "ReadData.h"
 
 #include "GameWindow.h"
+
+#include "WICTextureLoader.h"
 
 using namespace DirectX;
 
@@ -33,6 +37,7 @@ struct Vertex
 {
 	XMFLOAT3 position;
 	XMFLOAT4 color;
+	XMFLOAT2 UV;
 };
 
 ID3D11Buffer* pVBuffer = NULL; // Vertex
@@ -66,6 +71,9 @@ struct Camera
 };
 
 Camera g_camera;
+
+ID3D11ShaderResourceView* pTexture = NULL; // Texture
+ID3D11SamplerState* pSampler = NULL; // Sampler
 
 #pragma endregion
 
@@ -340,7 +348,7 @@ HRESULT InitD3D(HWND hWnd)
 	g_pDeviceContext->OMSetRenderTargets(1, &g_backbuffer, NULL);
 #pragma endregion	
 
-	#pragma region Viewport
+#pragma region Viewport
 	// Define and set the viewport
 	D3D11_VIEWPORT viewport = {};
 	viewport.TopLeftX = 0; // Top left x position of viewport
@@ -350,7 +358,7 @@ HRESULT InitD3D(HWND hWnd)
 	viewport.MinDepth = 0; // Min depth of viewport
 	viewport.MaxDepth = 1; // Max depth of viewport
 	g_pDeviceContext->RSSetViewports(1, &viewport); // Set the viewport
-	#pragma endregion
+#pragma endregion
 
 	//InitPipeline();
 
@@ -365,15 +373,15 @@ void InitGraphics()
 		{XMFLOAT3{0.0f, 0.5f, 0.0f}, XMFLOAT4{Colors::MediumPurple}},
 		{XMFLOAT3{0.5f, -0.5f, 0.0f}, XMFLOAT4{Colors::Turquoise}}*/
 
-		{XMFLOAT3{-0.5f, -0.5f, -0.5f}, XMFLOAT4{Colors::MediumVioletRed        }},  // Front BL
-		{XMFLOAT3{-0.5f,  0.5f, -0.5f}, XMFLOAT4{Colors::PaleVioletRed      }},  // Front TL
-		{XMFLOAT3{ 0.5f,  0.5f, -0.5f}, XMFLOAT4{Colors::MediumVioletRed }},  // Front TR
-		{XMFLOAT3{ 0.5f, -0.5f, -0.5f}, XMFLOAT4{Colors::PaleVioletRed   }},  // Front BR
+		{XMFLOAT3{-0.5f, -0.5f, -0.5f}, XMFLOAT4{Colors::MediumVioletRed}, XMFLOAT2{0.0f, 1.0f}},  // Front BL
+		{XMFLOAT3{-0.5f,  0.5f, -0.5f}, XMFLOAT4{Colors::PaleVioletRed  }, XMFLOAT2{0.0f, 0.0f}},  // Front TL
+		{XMFLOAT3{ 0.5f,  0.5f, -0.5f}, XMFLOAT4{Colors::MediumVioletRed}, XMFLOAT2{1.0f, 0.0f}},  // Front TR
+		{XMFLOAT3{ 0.5f, -0.5f, -0.5f}, XMFLOAT4{Colors::PaleVioletRed  }, XMFLOAT2{1.0f, 1.0f}},  // Front BR
 
-		{XMFLOAT3{-0.5f, -0.5f,  0.5f}, XMFLOAT4{Colors::PaleVioletRed        }},  // Back BL
-		{XMFLOAT3{-0.5f,  0.5f,  0.5f}, XMFLOAT4{Colors::MediumVioletRed      }},  // Back TL
-		{XMFLOAT3{ 0.5f,  0.5f,  0.5f}, XMFLOAT4{Colors::PaleVioletRed }},  // Back TR
-		{XMFLOAT3{ 0.5f, -0.5f,  0.5f}, XMFLOAT4{Colors::MediumVioletRed   }},  // Back BR
+		{XMFLOAT3{-0.5f, -0.5f,  0.5f}, XMFLOAT4{Colors::PaleVioletRed  }, XMFLOAT2{0.0f, 1.0f}},  // Back BL
+		{XMFLOAT3{-0.5f,  0.5f,  0.5f}, XMFLOAT4{Colors::MediumVioletRed}, XMFLOAT2{0.0f, 0.0f}},  // Back TL
+		{XMFLOAT3{ 0.5f,  0.5f,  0.5f}, XMFLOAT4{Colors::PaleVioletRed  }, XMFLOAT2{1.0f, 0.0f}},  // Back TR
+		{XMFLOAT3{ 0.5f, -0.5f,  0.5f}, XMFLOAT4{Colors::MediumVioletRed}, XMFLOAT2{1.0f, 1.0f}},  // Back BR
 
 	};
 
@@ -433,6 +441,17 @@ void InitGraphics()
 		OutputDebugString(L"Failed to create constant buffer\n");
 
 
+	CreateWICTextureFromFile(g_pDevice, g_pDeviceContext, L"Textures/Box.bmp", NULL, &pTexture);
+
+	D3D11_SAMPLER_DESC samplerDesc;
+	ZeroMemory(&samplerDesc, sizeof(D3D11_SAMPLER_DESC));
+	samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+	samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP; // Wrap texture if U coordinate is outside of 0.0f to 1.0f
+	samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP; // Wrap texture if V coordinate is outside of 0.0f to 1.0f
+	samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP; // Wrap texture if W coordinate is outside of 0.0f to 1.0f
+	samplerDesc.MaxLOD = D3D11_FLOAT32_MAX; // Use all mipmap levels
+	g_pDevice->CreateSamplerState(&samplerDesc, &pSampler); 
+
 }
 
 void RenderFrame(XMVECTORF32 color) 
@@ -487,6 +506,9 @@ void RenderFrame(XMVECTORF32 color)
 	g_pDeviceContext->UpdateSubresource(pCBuffer, 0, NULL, &cBuffer0, 0, 0);
 	g_pDeviceContext->VSSetConstantBuffers(0, 1, &pCBuffer);
 
+	g_pDeviceContext->PSSetSamplers(0, 1, &pSampler);
+	g_pDeviceContext->PSSetShaderResources(0, 1, &pTexture); 
+
 	// Draw 3 vertices
 	g_pDeviceContext->DrawIndexed(36, 0, 0);
 
@@ -509,6 +531,8 @@ void CleanD3D()
 	if (g_pVertexShader) g_pVertexShader->Release();
 	if (g_pPixelShader) g_pPixelShader->Release();
 	if (g_pVertexBuffer) g_pVertexBuffer->Release();
+	if (pTexture) pTexture->Release();
+	if (pSampler) pSampler->Release();
 }
 
 void OpenConsole()
