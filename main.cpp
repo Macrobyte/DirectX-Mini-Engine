@@ -9,6 +9,7 @@
 #include <d3dcompiler.h>
 #include <d3d11shader.h>
 #include "ReadData.h"
+#include "text2D.h"
 
 #include "GameWindow.h"
 
@@ -18,7 +19,7 @@ using namespace DirectX;
 
 #pragma region Global Variables
 
-XMVECTORF32 clearColor; // Default clear color
+XMVECTORF32 clearColor = Colors::Aquamarine; // Default clear color
 
 // Direct3D Variables
 IDXGISwapChain* g_pSwapChain = NULL; // The pointer to the swap chain interface
@@ -68,12 +69,29 @@ struct Camera
 {
 	float x = 0, y = 0, z = 0;
 	float pitch = XM_PIDIV2, yaw = 0;
+
+	XMVECTOR ForwardVector()
+	{ 
+		return XMVectorSet(sin(yaw) * sin(pitch), cos(pitch), cos(yaw) * sin(pitch), 1.f);
+	};
+
+	XMVECTOR RightVector() 
+	{ 
+		return XMVectorSet(sin(yaw - XM_PIDIV2), 0, cos(yaw - XM_PIDIV2), 1.f);
+	}
 };
 
 Camera g_camera;
 
 ID3D11ShaderResourceView* pTexture = NULL; // Texture
 ID3D11SamplerState* pSampler = NULL; // Sampler
+
+Text2D* pText;
+
+ID3D11BlendState* pAlphaBlendEnable = NULL;
+ID3D11BlendState* pAlphaBlendDisable = NULL;
+
+ID3D11RasterizerState* pRasterizerState = NULL;
 
 #pragma endregion
 
@@ -83,7 +101,7 @@ LRESULT CALLBACK WindowProc(HWND, UINT, WPARAM, LPARAM);
 // Direct3D Functions
 HRESULT InitD3D(HWND hWnd); // Sets up and initializes Direct3D
 void CleanD3D(); // Closes Direct3D and releases memory
-void RenderFrame(XMVECTORF32 color = clearColor);
+void RenderFrame();
 
 void InitGraphics(); // Create the shape to render
 HRESULT InitPipeline(); // Loads and prepares the shaders
@@ -155,6 +173,8 @@ int WINAPI WinMain(
 
 LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
+
+
 	switch (message)
 	{
 		// This message is send when the user closes the window
@@ -166,7 +186,11 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 		return 0;
 		break;
 
+
 	case WM_KEYDOWN:
+
+		
+
 		switch (wParam)
 		{
 		case VK_ESCAPE:
@@ -185,16 +209,22 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 			g_camera.yaw += XM_PI / 8;
 			break;
 		case 'W':
-			g_camera.z += 0.25f;
+			g_camera.x += XMVectorGetX(g_camera.ForwardVector()) * 0.25f;
+			g_camera.z += XMVectorGetZ(g_camera.ForwardVector()) * 0.25f;
+
 			break;
 		case 'S':
-			g_camera.z -= 0.25f;
+			g_camera.x -= XMVectorGetX(g_camera.ForwardVector()) * 0.25f;
+			g_camera.z -= XMVectorGetZ(g_camera.ForwardVector()) * 0.25f;
+
 			break;
 		case 'A':
-			g_camera.x -= 0.25f;
+			g_camera.x += XMVectorGetX(g_camera.RightVector()) * 0.25f;
+			g_camera.z += XMVectorGetZ(g_camera.RightVector()) * 0.25f;
 			break;
 		case 'D':
-			g_camera.x += 0.25f;
+			g_camera.x -= XMVectorGetX(g_camera.RightVector()) * 0.25f;
+			g_camera.z -= XMVectorGetZ(g_camera.RightVector()) * 0.25f;
 		break;
 		
 		}
@@ -360,6 +390,43 @@ HRESULT InitD3D(HWND hWnd)
 	g_pDeviceContext->RSSetViewports(1, &viewport); // Set the viewport
 #pragma endregion
 
+	D3D11_BLEND_DESC bd1 = { 0 };
+	bd1.RenderTarget[0].BlendEnable = TRUE;
+	bd1.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
+	bd1.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
+	bd1.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
+	bd1.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+	bd1.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
+	bd1.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
+	bd1.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+	bd1.IndependentBlendEnable = FALSE;
+	bd1.AlphaToCoverageEnable = FALSE;
+
+	g_pDevice->CreateBlendState(&bd1, &pAlphaBlendEnable);
+
+	D3D11_BLEND_DESC bd2 = { 0 };
+	bd2.RenderTarget[0].BlendEnable = FALSE;
+	bd2.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
+	bd2.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
+	bd2.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
+	bd2.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+	bd2.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
+	bd2.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
+	bd2.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+	bd2.IndependentBlendEnable = FALSE;
+	bd2.AlphaToCoverageEnable = FALSE;
+
+	g_pDevice->CreateBlendState(&bd2, &pAlphaBlendDisable);
+
+	D3D11_RASTERIZER_DESC rsDesc;
+	ZeroMemory(&rsDesc, sizeof(D3D11_RASTERIZER_DESC));
+	rsDesc.CullMode = D3D11_CULL_NONE;
+	rsDesc.FillMode = D3D11_FILL_WIREFRAME;
+
+	g_pDevice->CreateRasterizerState(&rsDesc, &pRasterizerState);
+
+	g_pDeviceContext->RSSetState(pRasterizerState);
+
 	//InitPipeline();
 
 	return S_OK;
@@ -385,6 +452,7 @@ void InitGraphics()
 
 	};
 
+	pText = new Text2D("Textures/font1.png", g_pDevice, g_pDeviceContext);
 
 	// Create the vertex buffer
 	D3D11_BUFFER_DESC bd = { 0 };
@@ -454,10 +522,10 @@ void InitGraphics()
 
 }
 
-void RenderFrame(XMVECTORF32 color) 
+void RenderFrame() 
 {	
 	// Clear the back buffer the color parameter
-	g_pDeviceContext->ClearRenderTargetView(g_backbuffer, color);
+	g_pDeviceContext->ClearRenderTargetView(g_backbuffer, clearColor);
 
 	// Select which vertex buffer to use
 	UINT stride = sizeof(Vertex);
@@ -486,10 +554,14 @@ void RenderFrame(XMVECTORF32 color)
 
 	// View
 	XMVECTOR eyePos = { g_camera.x, g_camera.y, g_camera.z };
-	XMVECTOR lookAt = { 0,0,1 }; // World forward
+
+	XMVECTOR lookTo = { sin(g_camera.yaw) * sin(g_camera.pitch), 
+						cos(g_camera.pitch), 
+						cos(g_camera.yaw) * sin(g_camera.pitch) };
+
 	XMVECTOR campUp = { 0,1,0 }; // World up
 
-	view = XMMatrixLookAtLH(eyePos, lookAt, campUp);
+	view = XMMatrixLookToLH(eyePos, lookTo, campUp);
 
 	// Transform matrices
 	translation = XMMatrixTranslation(pos.x, pos.y, pos.z);
@@ -512,6 +584,12 @@ void RenderFrame(XMVECTORF32 color)
 	// Draw 3 vertices
 	g_pDeviceContext->DrawIndexed(36, 0, 0);
 
+	pText->AddText("Hello World", -1, +1, 0.075f);
+	g_pDeviceContext->OMSetBlendState(pAlphaBlendEnable, NULL, 0xffffffff);
+	pText->RenderText();
+	g_pDeviceContext->OMSetBlendState(pAlphaBlendDisable, NULL, 0xffffffff);
+
+
 	// Flip the back and front buffers around. Display on screen
 	g_pSwapChain->Present(0, 0);
 
@@ -521,6 +599,9 @@ void RenderFrame(XMVECTORF32 color)
 void CleanD3D()
 {
 	// Close and release all existing COM objects
+	delete pText;
+	if(pAlphaBlendEnable) pAlphaBlendEnable->Release();
+	if(pAlphaBlendDisable) pAlphaBlendDisable->Release();
 	if(pCBuffer) pCBuffer->Release();
 	if(pVBuffer) pVBuffer->Release();
 	if(g_backbuffer) g_backbuffer->Release();
@@ -533,6 +614,7 @@ void CleanD3D()
 	if (g_pVertexBuffer) g_pVertexBuffer->Release();
 	if (pTexture) pTexture->Release();
 	if (pSampler) pSampler->Release();
+
 }
 
 void OpenConsole()
