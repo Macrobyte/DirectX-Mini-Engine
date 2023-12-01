@@ -421,7 +421,7 @@ HRESULT InitD3D(HWND hWnd)
 	D3D11_RASTERIZER_DESC rsDesc;
 	ZeroMemory(&rsDesc, sizeof(D3D11_RASTERIZER_DESC));
 	rsDesc.CullMode = D3D11_CULL_NONE;
-	rsDesc.FillMode = D3D11_FILL_WIREFRAME;
+	rsDesc.FillMode = D3D11_FILL_SOLID;
 
 	g_pDevice->CreateRasterizerState(&rsDesc, &pRasterizerState);
 
