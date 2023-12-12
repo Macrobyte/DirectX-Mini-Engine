@@ -19,13 +19,15 @@ using namespace DirectX;
 
 #pragma region Global Variables
 
-XMVECTORF32 clearColor = Colors::Aquamarine; // Default clear color
+XMVECTORF32 clearColor = Colors::Teal; // Default clear color
 
 // Direct3D Variables
 IDXGISwapChain* g_pSwapChain = NULL; // The pointer to the swap chain interface
 ID3D11Device* g_pDevice = NULL; // The pointer to our Direct3D device interface
 ID3D11DeviceContext* g_pDeviceContext = NULL; // The pointer to our Direct3D device context
 ID3D11RenderTargetView* g_backbuffer = NULL; // A view to access our back buffer
+
+ID3D11DepthStencilView* g_ZBuffer = NULL; // The pointer to our depth buffer
 
 // Shaders
 ID3D11VertexShader* g_pVertexShader = NULL; // The pointer to the vertex shader
@@ -59,11 +61,26 @@ struct CBUFFER0
 	//float padding; // 4 bytes! - not used!!!!! but important!!!!!!!!!!!!!!!!
 };
 
-// Transforms
-XMFLOAT3 pos{ 0,0,1 };
-XMFLOAT3 rot{ 0,0,0 };
-XMFLOAT3 scl{ 1,1,1 };
+// Transform
+struct Transform
+{
+	XMFLOAT3 pos{ 0,0,2 };
+	XMFLOAT3 rot{ 0,0,0 };
+	XMFLOAT3 scl{ 1,1,1 };
 
+	XMMATRIX GetWorldMatrix()
+	{
+		XMMATRIX translation = XMMatrixTranslation(pos.x, pos.y, pos.z);
+		XMMATRIX rotation = XMMatrixRotationRollPitchYaw(rot.x, rot.y, rot.z);
+		XMMATRIX scale = XMMatrixScaling(scl.x, scl.y, scl.z);
+
+		XMMATRIX world = scale * rotation * translation;
+		return world;
+	}
+};
+
+Transform cube1;
+Transform cube2;
 
 struct Camera
 {
@@ -78,6 +95,18 @@ struct Camera
 	XMVECTOR RightVector() 
 	{ 
 		return XMVectorSet(sin(yaw - XM_PIDIV2), 0, cos(yaw - XM_PIDIV2), 1.f);
+	}
+
+	XMMATRIX GetViewMatrix()
+	{
+		XMVECTOR eyePos{ x,y,z };
+		XMVECTOR camUp{ 0,1,0 }; // World Up
+		XMVECTOR lookTo{sin(yaw) * sin(pitch),
+						cos(pitch),
+						cos(yaw) * sin(pitch)};
+
+		XMMATRIX view = XMMatrixLookToLH(eyePos, lookTo, camUp);
+		return view;
 	}
 };
 
@@ -108,6 +137,7 @@ HRESULT InitPipeline(); // Loads and prepares the shaders
 
 // Console window for debug output
 void OpenConsole();
+void InitScene();
 #pragma endregion
 
 
@@ -141,6 +171,8 @@ int WINAPI WinMain(
 
 	InitGraphics();
 
+	InitScene();
+
 	// Used to hold windows event messages
 	MSG msg;
 	
@@ -173,8 +205,6 @@ int WINAPI WinMain(
 
 LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-
-
 	switch (message)
 	{
 		// This message is send when the user closes the window
@@ -326,7 +356,7 @@ HRESULT InitPipeline()
 HRESULT InitD3D(HWND hWnd)
 {
 
-	#pragma region Swapchain Info
+#pragma region Swapchain Info
 	// Create a struct to hold information about the swap chain
 	DXGI_SWAP_CHAIN_DESC scd = {};
 	// Fill the swap chain description struct
@@ -341,9 +371,9 @@ HRESULT InitD3D(HWND hWnd)
 	scd.SampleDesc.Count = 1; // How many multisamples
 	scd.Windowed = TRUE; // Windowed or full screen
 	scd.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH; // Allow full screen switching
-	#pragma endregion	
+#pragma  endregion
 
-	#pragma region Device that uses scd struct
+#pragma region Device that uses scd struct
 	// Create a device, device context and swap chain using the information in the scd struct
 	HRESULT hr;
 	// Create a swap chain, device and device context from the scd
@@ -374,8 +404,38 @@ HRESULT InitD3D(HWND hWnd)
 	// Release the pointer to the back buffer as we no longer need it
 	pBackBufferTexture->Release();
 
+	D3D11_TEXTURE2D_DESC tex2dDesc = { 0 };
+	tex2dDesc.Width = GameWindow::GetWindowWidth();
+	tex2dDesc.Height = GameWindow::GetWindowHeight();
+	tex2dDesc.ArraySize = 1;
+	tex2dDesc.MipLevels = 1;
+	tex2dDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+	tex2dDesc.SampleDesc.Count = scd.SampleDesc.Count; // Same sample description as the swap chain
+	tex2dDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+	tex2dDesc.Usage = D3D11_USAGE_DEFAULT;
+
+	ID3D11Texture2D* zBufferTexture;
+	hr = g_pDevice->CreateTexture2D(&tex2dDesc, NULL, &zBufferTexture);
+	if(FAILED(hr))
+	{
+		OutputDebugString(L"Failed to create depth stencil texture\n");
+		return E_FAIL;
+	}
+
+	D3D11_DEPTH_STENCIL_VIEW_DESC dsvDesc;
+	ZeroMemory(&dsvDesc, sizeof(D3D11_DEPTH_STENCIL_VIEW_DESC));
+	dsvDesc.Format = tex2dDesc.Format;
+	dsvDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
+	hr = g_pDevice->CreateDepthStencilView(zBufferTexture, &dsvDesc, &g_ZBuffer);
+	if(FAILED(hr))
+	{
+		OutputDebugString(L"Failed to create depth stencil view\n");
+		return E_FAIL;
+	}
+	zBufferTexture->Release();
+
 	// Set the render target as the back buffer
-	g_pDeviceContext->OMSetRenderTargets(1, &g_backbuffer, NULL);
+	g_pDeviceContext->OMSetRenderTargets(1, &g_backbuffer, g_ZBuffer);
 #pragma endregion	
 
 #pragma region Viewport
@@ -427,8 +487,6 @@ HRESULT InitD3D(HWND hWnd)
 
 	g_pDeviceContext->RSSetState(pRasterizerState);
 
-	//InitPipeline();
-
 	return S_OK;
 }
 
@@ -436,10 +494,6 @@ void InitGraphics()
 {
 	Vertex vertices[] =
 	{
-		/*{XMFLOAT3{-0.5f, -0.5f, 0.0f}, XMFLOAT4{Colors::LightGoldenrodYellow}},
-		{XMFLOAT3{0.0f, 0.5f, 0.0f}, XMFLOAT4{Colors::MediumPurple}},
-		{XMFLOAT3{0.5f, -0.5f, 0.0f}, XMFLOAT4{Colors::Turquoise}}*/
-
 		{XMFLOAT3{-0.5f, -0.5f, -0.5f}, XMFLOAT4{Colors::MediumVioletRed}, XMFLOAT2{0.0f, 1.0f}},  // Front BL
 		{XMFLOAT3{-0.5f,  0.5f, -0.5f}, XMFLOAT4{Colors::PaleVioletRed  }, XMFLOAT2{0.0f, 0.0f}},  // Front TL
 		{XMFLOAT3{ 0.5f,  0.5f, -0.5f}, XMFLOAT4{Colors::MediumVioletRed}, XMFLOAT2{1.0f, 0.0f}},  // Front TR
@@ -499,7 +553,6 @@ void InitGraphics()
 		OutputDebugString(L"Failed to create index buffer\n");
 
 
-
 	D3D11_BUFFER_DESC cbd = { 0 };
 	cbd.Usage = D3D11_USAGE_DEFAULT;
 	cbd.ByteWidth = sizeof(CBUFFER0);
@@ -526,63 +579,43 @@ void RenderFrame()
 {	
 	// Clear the back buffer the color parameter
 	g_pDeviceContext->ClearRenderTargetView(g_backbuffer, clearColor);
+	g_pDeviceContext->ClearDepthStencilView(g_ZBuffer, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
-	// Select which vertex buffer to use
+	// Select which vertex buffer, index buffer and primtive topology to use - PER MESH!!
 	UINT stride = sizeof(Vertex);
 	UINT offset = 0;
 	g_pDeviceContext->IASetVertexBuffers(0, 1, &g_pVertexBuffer, &stride, &offset);
 	g_pDeviceContext->IASetIndexBuffer(pIBuffer, DXGI_FORMAT_R32_UINT, 0);
+	g_pDeviceContext->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST); 	// Select which primitive we are using
 
+	// View and projection matrices
+	XMMATRIX world, view, projection;
+	projection = XMMatrixPerspectiveFovLH(XMConvertToRadians(60), GameWindow::GetWindowWidth() / (float)GameWindow::GetWindowHeight(), 0.1f, 100.0f);
+	view = g_camera.GetViewMatrix();
 
-	// Select which primitive we are using
-	g_pDeviceContext->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	CBUFFER0 cBuffer;
 
-	pos.z = 4.0f;
+	world = cube1.GetWorldMatrix();
+	cBuffer.WVP = world * view * projection;
 
-	static float fakeTime = 0.0f;
-	fakeTime += 0.0001f;
-	//pos.x = sin(fakeTime);
-	//pos.y = cos(fakeTime);
-	//rot.z = sin(fakeTime);
-	//rot.y = cos(fakeTime);
-
-	CBUFFER0 cBuffer0;
-	XMMATRIX translation, rotation, scale;
-	XMMATRIX world;
-	XMMATRIX projection;
-	XMMATRIX view;
-
-	// View
-	XMVECTOR eyePos = { g_camera.x, g_camera.y, g_camera.z };
-
-	XMVECTOR lookTo = { sin(g_camera.yaw) * sin(g_camera.pitch), 
-						cos(g_camera.pitch), 
-						cos(g_camera.yaw) * sin(g_camera.pitch) };
-
-	XMVECTOR campUp = { 0,1,0 }; // World up
-
-	view = XMMatrixLookToLH(eyePos, lookTo, campUp);
-
-	// Transform matrices
-	translation = XMMatrixTranslation(pos.x, pos.y, pos.z);
-	rotation = XMMatrixRotationRollPitchYaw(rot.x, rot.y, rot.z);
-	scale = XMMatrixScaling(scl.x, scl.y, scl.z);
-
-	world = scale * rotation * translation;
-
-	projection = XMMatrixPerspectiveFovLH(XMConvertToRadians(60),GameWindow::GetWindowWidth() / (float)GameWindow::GetWindowHeight(), 0.1f, 100.0f);
-
-	// Set cbuffer values
-	cBuffer0.WVP = world * view * projection;
-
-	g_pDeviceContext->UpdateSubresource(pCBuffer, 0, NULL, &cBuffer0, 0, 0);
+	// Update constant buffer
+	g_pDeviceContext->UpdateSubresource(pCBuffer, 0, NULL, &cBuffer, 0, 0);
 	g_pDeviceContext->VSSetConstantBuffers(0, 1, &pCBuffer);
 
+	// Textures
 	g_pDeviceContext->PSSetSamplers(0, 1, &pSampler);
 	g_pDeviceContext->PSSetShaderResources(0, 1, &pTexture); 
 
-	// Draw 3 vertices
 	g_pDeviceContext->DrawIndexed(36, 0, 0);
+
+
+
+	world = cube2.GetWorldMatrix();
+	cBuffer.WVP = world * view * projection;
+	g_pDeviceContext->UpdateSubresource(pCBuffer, 0, NULL, &cBuffer, 0, 0);
+	g_pDeviceContext->VSSetConstantBuffers(0, 1, &pCBuffer);
+	g_pDeviceContext->DrawIndexed(36, 0, 0);
+
 
 	pText->AddText("Hello World", -1, +1, 0.075f);
 	g_pDeviceContext->OMSetBlendState(pAlphaBlendEnable, NULL, 0xffffffff);
@@ -600,6 +633,7 @@ void CleanD3D()
 {
 	// Close and release all existing COM objects
 	delete pText;
+	if(g_ZBuffer) g_ZBuffer->Release();
 	if(pAlphaBlendEnable) pAlphaBlendEnable->Release();
 	if(pAlphaBlendDisable) pAlphaBlendDisable->Release();
 	if(pCBuffer) pCBuffer->Release();
@@ -630,4 +664,10 @@ void OpenConsole()
 
 		std::cout << "Hello side console!!" << std::endl;
 	}
+}
+
+void InitScene()
+{
+	cube1.pos = XMFLOAT3(0.7f, 0.0f, 3.0f);
+	cube2.rot = XMFLOAT3(0.0f, XMConvertToRadians(45), 0.0f);
 }
