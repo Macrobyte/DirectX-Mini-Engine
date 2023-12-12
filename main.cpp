@@ -18,6 +18,9 @@
 #include <Mouse.h>
 #include <Keyboard.h>
 
+#include "objfilemodel.h"
+
+
 using namespace DirectX;
 
 #define MAX_POINT_LIGHTS 8
@@ -147,6 +150,18 @@ XMVECTOR directionalLightShinesFrom = { 0.2788f, 0.7063f, 0.6506f };
 XMVECTOR directionalLightColour = { 0.96f, 0.8f, 0.75f, 1.0f };
 PointLight pointLights[MAX_POINT_LIGHTS];
 
+ObjFileModel* model;
+
+ID3D11RasterizerState* pRasterSolid = NULL;
+ID3D11RasterizerState* pRasterSkybox = NULL;
+ID3D11DepthStencilState* pDepthWriteSolid = NULL;
+ID3D11DepthStencilState* pDepthWriteSkybox = NULL;
+ID3D11Buffer* pSkyboxCBuffer = NULL;
+ID3D11ShaderResourceView* pSkyboxTexture = NULL;
+ID3D11VertexShader* pVSSkybox = NULL;
+ID3D11PixelShader* pPSSkybox = NULL;
+ID3D11InputLayout* pLayoutSkybox = NULL;
+
 #pragma endregion
 
 #pragma region Function Properties
@@ -154,6 +169,8 @@ LRESULT CALLBACK WindowProc(HWND, UINT, WPARAM, LPARAM);
 
 // Direct3D Functions
 HRESULT InitD3D(HWND hWnd); // Sets up and initializes Direct3D
+HRESULT LoadVertexShader(LPCWSTR filename, ID3D11VertexShader** vs, ID3D11InputLayout** il);
+HRESULT LoadPixelShader(LPCWSTR filename, ID3D11PixelShader** ps);
 void CleanD3D(); // Closes Direct3D and releases memory
 void RenderFrame();
 
@@ -162,6 +179,7 @@ HRESULT InitPipeline(); // Loads and prepares the shaders
 
 // Console window for debug output
 void OpenConsole();
+
 void InitScene();
 void HandleInput();
 #pragma endregion
@@ -293,85 +311,16 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 
 HRESULT InitPipeline()
 {
-	// Load and compile the two shaders
-	HRESULT result;
+	LoadVertexShader(L"Compiled Shaders/VertexShader.cso", &g_pVertexShader, &g_pInputLayout);
+	LoadPixelShader(L"Compiled Shaders/PixelShader.cso", &g_pPixelShader);
 
-	auto vertexShaderBytecode = DX::ReadData(L"Compiled Shaders/VertexShader.cso");
-	auto pixelShaderBytecode = DX::ReadData(L"Compiled Shaders/PixelShader.cso");
+	//LoadVertexShader(L"Compiled Shaders/SkyboxVertexShader.cso", &pVSSkybox, &pLayoutSkybox);
 
-	// Encapsulate both shaders into shader objects
-	result = g_pDevice->CreateVertexShader(vertexShaderBytecode.data(), vertexShaderBytecode.size(), NULL, &g_pVertexShader); // Create the vertex shader
-	if (FAILED(result))
-	{
-		OutputDebugString(L"Failed to create vertex shader\n");
-		return result;
-	}
+	g_pDeviceContext->VSSetShader(g_pVertexShader, 0, 0);
 
-	result = g_pDevice->CreatePixelShader(pixelShaderBytecode.data(), pixelShaderBytecode.size(), NULL, &g_pPixelShader); // Create the pixel shader
-	if (FAILED(result))
-	{
-		OutputDebugString(L"Failed to create pixel shader\n");
-		return result;
-	}
+	g_pDeviceContext->IASetInputLayout(g_pInputLayout);
 
-	// Set the shader objects
-	g_pDeviceContext->VSSetShader(g_pVertexShader, 0, 0); 
-	g_pDeviceContext->PSSetShader(g_pPixelShader, 0, 0); 
-
-	ID3D11ShaderReflection* vShaderReflection = NULL;
-	result = D3DReflect(vertexShaderBytecode.data(), vertexShaderBytecode.size(), IID_ID3D11ShaderReflection, (void**)&vShaderReflection); 
-	if (FAILED(result))
-	{
-		OutputDebugString(L"Failed to reflect vertex shader\n"); 
-		return result;
-	}
-
-	D3D11_SHADER_DESC shaderDesc;
-	vShaderReflection->GetDesc(&shaderDesc);
-
-	// Read input layout description from shader info
-	D3D11_SIGNATURE_PARAMETER_DESC* signatureParamDesc = new D3D11_SIGNATURE_PARAMETER_DESC[shaderDesc.InputParameters]{ 0 };
-	for (UINT i = 0; i < shaderDesc.InputParameters; i++)
-	{
-		vShaderReflection->GetInputParameterDesc(i, &signatureParamDesc[i]);
-	}
-
-	// Signature param desk masks as follows: float4 = 15, float3 = 7, float2 = 3, float[1] = 1. These are bitmasks
-	// To put together input layout from shader info its something like this:
-	D3D11_INPUT_ELEMENT_DESC* ied = new D3D11_INPUT_ELEMENT_DESC[shaderDesc.InputParameters]{ 0 };
-	for (size_t i = 0; i < shaderDesc.InputParameters; i++)
-	{
-		ied[i].SemanticName = signatureParamDesc[i].SemanticName;
-		ied[i].SemanticIndex = signatureParamDesc[i].SemanticIndex;
-		if (signatureParamDesc[i].ComponentType == D3D_REGISTER_COMPONENT_FLOAT32)
-		{
-			switch (signatureParamDesc[i].Mask)
-			{
-			case 1: ied[i].Format = DXGI_FORMAT_R32_FLOAT; break; // float 1
-			case 3: ied[i].Format = DXGI_FORMAT_R32G32_FLOAT; break; // float 2
-			case 7: ied[i].Format = DXGI_FORMAT_R32G32B32_FLOAT; break; // float 3
-			case 15: ied[i].Format = DXGI_FORMAT_R32G32B32A32_FLOAT; break; // float 4
-			default:
-				break;
-			}
-		}// The above only covers ---x, --yx, -zyx, wzyx. It may be possible for a mask to be -yx- or yx- or zyx- (6, 12, 14)
-		ied[i].InputSlot = 0;
-		ied[i].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
-		ied[i].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
-		ied[i].InstanceDataStepRate = 0;
-	}
-
-	result = g_pDevice->CreateInputLayout(ied, shaderDesc.InputParameters, vertexShaderBytecode.data(), vertexShaderBytecode.size(), &g_pInputLayout);
-	if (FAILED(result))
-	{
-		OutputDebugString(L"Failed to create input layout\n");
-		return result;
-	}
-
-	g_pDeviceContext->IASetInputLayout(g_pInputLayout); 
-
-	delete[] signatureParamDesc;
-	delete[] ied;
+	g_pDeviceContext->PSSetShader(g_pPixelShader, 0, 0);
 
 	return S_OK;
 }
@@ -501,16 +450,118 @@ HRESULT InitD3D(HWND hWnd)
 
 	g_pDevice->CreateBlendState(&bd2, &pAlphaBlendDisable);
 
+	// Backface culling
 	D3D11_RASTERIZER_DESC rsDesc;
 	ZeroMemory(&rsDesc, sizeof(D3D11_RASTERIZER_DESC));
-	rsDesc.CullMode = D3D11_CULL_NONE;
+	rsDesc.CullMode = D3D11_CULL_BACK;
 	rsDesc.FillMode = D3D11_FILL_SOLID;
 
-	g_pDevice->CreateRasterizerState(&rsDesc, &pRasterizerState);
+	g_pDevice->CreateRasterizerState(&rsDesc, &pRasterSolid);
+
+	// Frontface culling
+	rsDesc.CullMode = D3D11_CULL_FRONT;
+	g_pDevice->CreateRasterizerState(&rsDesc, &pRasterSkybox);
+
+	// Depth writing enabled
+	D3D11_DEPTH_STENCIL_DESC dsDesc = { 0 };
+	dsDesc.DepthEnable = true;
+	dsDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+	dsDesc.DepthFunc = D3D11_COMPARISON_LESS;
+	g_pDevice->CreateDepthStencilState(&dsDesc, &pDepthWriteSolid);
+
+	// Depth writing disabled
+	dsDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
+	g_pDevice->CreateDepthStencilState(&dsDesc, &pDepthWriteSkybox);
 
 	g_pDeviceContext->RSSetState(pRasterizerState);
 
 	return S_OK;
+}
+
+HRESULT LoadVertexShader(LPCWSTR filename, ID3D11VertexShader** vs, ID3D11InputLayout** il)
+{
+	HRESULT result;
+
+	auto vertexShaderBytecode = DX::ReadData(filename);
+
+	result = g_pDevice->CreateVertexShader(vertexShaderBytecode.data(),vertexShaderBytecode.size(), NULL, vs);
+	if (FAILED(result))
+	{
+		OutputDebugString(L"Failed to create vertex shader\n");
+		return result;
+	}
+
+	ID3D11ShaderReflection* vShaderReflection = NULL;
+	result = D3DReflect(vertexShaderBytecode.data(), vertexShaderBytecode.size(), IID_ID3D11ShaderReflection, (void**)&vShaderReflection);
+	if (FAILED(result))
+	{
+		OutputDebugString(L"Failed to reflect vertex shader\n");
+		return result;
+	}
+
+
+	D3D11_SHADER_DESC shaderDesc;
+	vShaderReflection->GetDesc(&shaderDesc);
+
+	// Read input layout description from shader info
+	D3D11_SIGNATURE_PARAMETER_DESC* signatureParamDesc = new D3D11_SIGNATURE_PARAMETER_DESC[shaderDesc.InputParameters]{ 0 };
+	for (UINT i = 0; i < shaderDesc.InputParameters; i++)
+	{
+		vShaderReflection->GetInputParameterDesc(i, &signatureParamDesc[i]);
+	}
+
+	// Signature param desk masks as follows: float4 = 15, float3 = 7, float2 = 3, float[1] = 1. These are bitmasks
+	// To put together input layout from shader info its something like this:
+	D3D11_INPUT_ELEMENT_DESC* ied = new D3D11_INPUT_ELEMENT_DESC[shaderDesc.InputParameters]{ 0 };
+	for (size_t i = 0; i < shaderDesc.InputParameters; i++)
+	{
+		ied[i].SemanticName = signatureParamDesc[i].SemanticName;
+		ied[i].SemanticIndex = signatureParamDesc[i].SemanticIndex;
+		if (signatureParamDesc[i].ComponentType == D3D_REGISTER_COMPONENT_FLOAT32)
+		{
+			switch (signatureParamDesc[i].Mask)
+			{
+			case 1: ied[i].Format = DXGI_FORMAT_R32_FLOAT; break; // float 1
+			case 3: ied[i].Format = DXGI_FORMAT_R32G32_FLOAT; break; // float 2
+			case 7: ied[i].Format = DXGI_FORMAT_R32G32B32_FLOAT; break; // float 3
+			case 15: ied[i].Format = DXGI_FORMAT_R32G32B32A32_FLOAT; break; // float 4
+			default:
+				break;
+			}
+		}// The above only covers ---x, --yx, -zyx, wzyx. It may be possible for a mask to be -yx- or yx- or zyx- (6, 12, 14)
+		ied[i].InputSlot = 0;
+		ied[i].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
+		ied[i].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
+		ied[i].InstanceDataStepRate = 0;
+	}
+
+	result = g_pDevice->CreateInputLayout(ied, shaderDesc.InputParameters, vertexShaderBytecode.data(), vertexShaderBytecode.size(), il);
+	if (FAILED(result))
+	{
+		OutputDebugString(L"Failed to create input layout\n");
+		return result;
+	}
+
+	//g_pDeviceContext->IASetInputLayout(g_pInputLayout);
+
+	delete[] signatureParamDesc;
+	delete[] ied;
+
+	return S_OK;
+}
+
+HRESULT LoadPixelShader(LPCWSTR filename, ID3D11PixelShader** ps)
+{
+	HRESULT result;
+
+	auto pixelShaderBytecode = DX::ReadData(filename);
+
+	result = g_pDevice->CreatePixelShader(pixelShaderBytecode.data(), pixelShaderBytecode.size(), NULL, ps);
+	if (FAILED(result))
+	{
+		OutputDebugString(L"Failed to create pixel shader\n");
+		return result;
+	}
 }
 
 void InitGraphics()
@@ -530,6 +581,10 @@ void InitGraphics()
 	};
 
 	pText = new Text2D("Textures/font1.png", g_pDevice, g_pDeviceContext);
+
+	model = new ObjFileModel{ (char*)"Models/cube.obj",g_pDevice,g_pDeviceContext };
+
+	
 
 	// Create the vertex buffer
 	D3D11_BUFFER_DESC bd = { 0 };
@@ -658,8 +713,8 @@ void RenderFrame()
 	g_pDeviceContext->PSSetSamplers(0, 1, &pSampler);
 	g_pDeviceContext->PSSetShaderResources(0, 1, &pTexture); 
 
-	g_pDeviceContext->DrawIndexed(36, 0, 0);
-
+	//g_pDeviceContext->DrawIndexed(36, 0, 0);
+	model->Draw();
 
 	/*world = cube2.GetWorldMatrix();
 	cBuffer.WVP = world * view * projection;
@@ -684,6 +739,15 @@ void CleanD3D()
 {
 	// Close and release all existing COM objects
 	delete pText;
+	delete model;
+	if(pRasterSolid) pRasterSolid->Release();
+	if(pRasterSkybox) pRasterSkybox->Release();
+	if(pDepthWriteSolid) pDepthWriteSolid->Release();
+	if(pDepthWriteSkybox) pDepthWriteSkybox->Release();
+	if(pSkyboxCBuffer) pSkyboxCBuffer->Release();
+	if(pSkyboxTexture) pSkyboxTexture->Release();
+	if(pVSSkybox) pVSSkybox->Release();
+	if(pPSSkybox) pPSSkybox->Release();
 	if(g_ZBuffer) g_ZBuffer->Release();
 	if(pAlphaBlendEnable) pAlphaBlendEnable->Release();
 	if(pAlphaBlendDisable) pAlphaBlendDisable->Release();

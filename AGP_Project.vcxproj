@@ -133,10 +133,12 @@
   <ItemGroup>
     <ClCompile Include="GameWindow.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="objfilemodel.cpp" />
     <ClCompile Include="text2D.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GameWindow.h" />
+    <ClInclude Include="objfilemodel.h" />
     <ClInclude Include="ReadData.h" />
     <ClInclude Include="text2D.h" />
   </ItemGroup>
