@@ -13,9 +13,14 @@
 
 #include "GameWindow.h"
 
-#include "WICTextureLoader.h"
+#include <WICTextureLoader.h>>
+
+#include <Mouse.h>
+#include <Keyboard.h>
 
 using namespace DirectX;
+
+#define MAX_POINT_LIGHTS 8
 
 #pragma region Global Variables
 
@@ -41,25 +46,34 @@ struct Vertex
 	XMFLOAT3 position;
 	XMFLOAT4 color;
 	XMFLOAT2 UV;
+	XMFLOAT3 normal;
 };
 
 ID3D11Buffer* pVBuffer = NULL; // Vertex
 ID3D11Buffer* pIBuffer = NULL; // Index
 ID3D11Buffer* pCBuffer = NULL; // Constant
 
+struct PointLight
+{
+	XMVECTOR position = { 0,0,0,1 };
+	XMVECTOR colour = { 1,1,1,1 };
+
+	float strength = 10;
+	BOOL enabled = false;
+	float padding[2];
+};
+
 struct CBUFFER0
 {
-	XMMATRIX WVP; // 64 bytes World View Projection matrix
-	// The 64 comes from each row being 16 bytes (4 floats * 4 bytes each) and there being 4 rows
-	// Each '4' is a 4 byte float value
-	// [ 4,4,4,4 ]
-	// [ 4,4,4,4 ]
-	// [ 4,4,4,4 ]
-	// [ 4,4,4,4 ]
-	// XMMATRIX is a a strictly aligned type for SIMD hardware.
-	
-	//float padding; // 4 bytes! - not used!!!!! but important!!!!!!!!!!!!!!!!
+	XMMATRIX WVP; // 64 bytes World-View-Projection matrix
+	XMVECTOR ambientLightCol;
+	XMVECTOR directionalLightDir;
+	XMVECTOR directionalLightCol;
+	PointLight pointLights[MAX_POINT_LIGHTS];
+
 };
+
+
 
 // Transform
 struct Transform
@@ -122,6 +136,17 @@ ID3D11BlendState* pAlphaBlendDisable = NULL;
 
 ID3D11RasterizerState* pRasterizerState = NULL;
 
+Keyboard keyboard;
+Keyboard::KeyboardStateTracker kbTracker;
+
+Mouse mouse;
+Mouse::ButtonStateTracker mbTracker;
+
+XMVECTOR ambientLightColour = { 0.1f, 0.1f, 0.1f, 1.0f };
+XMVECTOR directionalLightShinesFrom = { 0.2788f, 0.7063f, 0.6506f };
+XMVECTOR directionalLightColour = { 0.96f, 0.8f, 0.75f, 1.0f };
+PointLight pointLights[MAX_POINT_LIGHTS];
+
 #pragma endregion
 
 #pragma region Function Properties
@@ -138,6 +163,7 @@ HRESULT InitPipeline(); // Loads and prepares the shaders
 // Console window for debug output
 void OpenConsole();
 void InitScene();
+void HandleInput();
 #pragma endregion
 
 
@@ -148,7 +174,6 @@ int WINAPI WinMain(
 	_In_ LPSTR lpCmdLine, // Command line arguments
 	_In_ int nCmdShow) // How the window is to be shown (e.g. maximised, minimised, etc.
 {
-
 	OpenConsole();
 
 	if (FAILED(GameWindow::InitWindow(WindowProc, hInstance, nCmdShow, L"Game", 800, 600)))
@@ -173,6 +198,9 @@ int WINAPI WinMain(
 
 	InitScene();
 
+	Mouse::Get().SetWindow(GameWindow::GetWindowHandle());
+	Mouse::Get().SetMode(Mouse::MODE_RELATIVE);
+
 	// Used to hold windows event messages
 	MSG msg;
 	
@@ -194,6 +222,7 @@ int WINAPI WinMain(
 		else
 		{
 			// Game Code
+			HandleInput();
 			RenderFrame();
 		}
 	}
@@ -207,58 +236,52 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 {
 	switch (message)
 	{
-		// This message is send when the user closes the window
-		// Depending on our handling of your application windows, you may not need this.
-		// In this case, if a window is destroyed (e.g when escape is pressed below), we exit the application and post a message
-	case WM_DESTROY:
-		// Send quit message to the app
+	
+	case WM_DESTROY: // This message is sent when the user closes the window
 		PostQuitMessage(0);
 		return 0;
 		break;
 
+	case WM_ACTIVATE:
+	case WM_ACTIVATEAPP:
+	case WM_INPUT:
+		Keyboard::ProcessMessage(message, wParam, lParam);
+		Mouse::ProcessMessage(message, wParam, lParam);
+		break;
+
+	case WM_SYSKEYDOWN:
+		if(wParam == VK_RETURN && (lParam & 0x60000000) == 0x20000000)
+		{
+			// This is where you'd implement the classic alt+enter fullscreen toggle code
+		}
+		Keyboard::ProcessMessage(message, wParam, lParam);
+		break;
 
 	case WM_KEYDOWN:
-
-		
-
-		switch (wParam)
-		{
-		case VK_ESCAPE:
-			DestroyWindow(GameWindow::GetWindowHandle()); //Note! Destroying the window is not the same as closing the app
-			// Destroying the window will poas a WM_DESTROY  which will lead to PostQuitMessage(..) being called
-		case VK_LEFT: 
-			g_camera.yaw -= XM_PI / 8;
-			break;
-		case VK_RIGHT: 
-			g_camera.yaw += XM_PI / 8;
-			break;
-		case VK_UP: 
-			g_camera.yaw -= XM_PI / 8;
-			break;
-		case VK_DOWN: 
-			g_camera.yaw += XM_PI / 8;
-			break;
-		case 'W':
-			g_camera.x += XMVectorGetX(g_camera.ForwardVector()) * 0.25f;
-			g_camera.z += XMVectorGetZ(g_camera.ForwardVector()) * 0.25f;
-
-			break;
-		case 'S':
-			g_camera.x -= XMVectorGetX(g_camera.ForwardVector()) * 0.25f;
-			g_camera.z -= XMVectorGetZ(g_camera.ForwardVector()) * 0.25f;
-
-			break;
-		case 'A':
-			g_camera.x += XMVectorGetX(g_camera.RightVector()) * 0.25f;
-			g_camera.z += XMVectorGetZ(g_camera.RightVector()) * 0.25f;
-			break;
-		case 'D':
-			g_camera.x -= XMVectorGetX(g_camera.RightVector()) * 0.25f;
-			g_camera.z -= XMVectorGetZ(g_camera.RightVector()) * 0.25f;
+	case WM_KEYUP:
+	case WM_SYSKEYUP:
+		Keyboard::ProcessMessage(message, wParam, lParam);
 		break;
-		
-		}
-		
+
+
+	case WM_MOUSEACTIVATE:
+		return MA_ACTIVATEANDEAT; // This will ignore mouse clicks that regain focus on the window
+		break;
+
+	case WM_MOUSEMOVE:
+	case WM_LBUTTONDOWN:
+	case WM_LBUTTONUP:
+	case WM_RBUTTONDOWN:
+	case WM_RBUTTONUP:
+	case WM_MBUTTONDOWN:
+	case WM_MBUTTONUP:
+	case WM_MOUSEWHEEL:
+	case WM_XBUTTONDOWN:
+	case WM_XBUTTONUP:
+	case WM_MOUSEHOVER:
+		Mouse::ProcessMessage(message, wParam, lParam);
+		break;
+
 	default:
 		return DefWindowProc(hWnd, message, wParam, lParam);
 		break;
@@ -494,15 +517,15 @@ void InitGraphics()
 {
 	Vertex vertices[] =
 	{
-		{XMFLOAT3{-0.5f, -0.5f, -0.5f}, XMFLOAT4{Colors::MediumVioletRed}, XMFLOAT2{0.0f, 1.0f}},  // Front BL
-		{XMFLOAT3{-0.5f,  0.5f, -0.5f}, XMFLOAT4{Colors::PaleVioletRed  }, XMFLOAT2{0.0f, 0.0f}},  // Front TL
-		{XMFLOAT3{ 0.5f,  0.5f, -0.5f}, XMFLOAT4{Colors::MediumVioletRed}, XMFLOAT2{1.0f, 0.0f}},  // Front TR
-		{XMFLOAT3{ 0.5f, -0.5f, -0.5f}, XMFLOAT4{Colors::PaleVioletRed  }, XMFLOAT2{1.0f, 1.0f}},  // Front BR
+		{XMFLOAT3{-0.5f, -0.5f, -0.5f}, XMFLOAT4{Colors::MediumVioletRed}, XMFLOAT2{0.0f, 1.0f}, XMFLOAT3{-0.5773f, -0.5773f, -0.5773f}},  // Front BL
+		{XMFLOAT3{-0.5f,  0.5f, -0.5f}, XMFLOAT4{Colors::PaleVioletRed  }, XMFLOAT2{0.0f, 0.0f}, XMFLOAT3{-0.5773f,  0.5773f, -0.5773f}},  // Front TL
+		{XMFLOAT3{ 0.5f,  0.5f, -0.5f}, XMFLOAT4{Colors::MediumVioletRed}, XMFLOAT2{1.0f, 0.0f}, XMFLOAT3{ 0.5773f,  0.5773f, -0.5773f}},  // Front TR
+		{XMFLOAT3{ 0.5f, -0.5f, -0.5f}, XMFLOAT4{Colors::PaleVioletRed  }, XMFLOAT2{1.0f, 1.0f}, XMFLOAT3{ 0.5773f, -0.5773f, -0.5773f}},  // Front BR
 
-		{XMFLOAT3{-0.5f, -0.5f,  0.5f}, XMFLOAT4{Colors::PaleVioletRed  }, XMFLOAT2{0.0f, 1.0f}},  // Back BL
-		{XMFLOAT3{-0.5f,  0.5f,  0.5f}, XMFLOAT4{Colors::MediumVioletRed}, XMFLOAT2{0.0f, 0.0f}},  // Back TL
-		{XMFLOAT3{ 0.5f,  0.5f,  0.5f}, XMFLOAT4{Colors::PaleVioletRed  }, XMFLOAT2{1.0f, 0.0f}},  // Back TR
-		{XMFLOAT3{ 0.5f, -0.5f,  0.5f}, XMFLOAT4{Colors::MediumVioletRed}, XMFLOAT2{1.0f, 1.0f}},  // Back BR
+		{XMFLOAT3{-0.5f, -0.5f,  0.5f}, XMFLOAT4{Colors::PaleVioletRed  }, XMFLOAT2{0.0f, 1.0f}, XMFLOAT3{-0.5773f, -0.5773f,  0.5773f}},  // Back BL
+		{XMFLOAT3{-0.5f,  0.5f,  0.5f}, XMFLOAT4{Colors::MediumVioletRed}, XMFLOAT2{0.0f, 0.0f}, XMFLOAT3{-0.5773f,  0.5773f,  0.5773f}},  // Back TL
+		{XMFLOAT3{ 0.5f,  0.5f,  0.5f}, XMFLOAT4{Colors::PaleVioletRed  }, XMFLOAT2{1.0f, 0.0f}, XMFLOAT3{ 0.5773f,  0.5773f,  0.5773f}},  // Back TR
+		{XMFLOAT3{ 0.5f, -0.5f,  0.5f}, XMFLOAT4{Colors::MediumVioletRed}, XMFLOAT2{1.0f, 1.0f}, XMFLOAT3{ 0.5773f, -0.5773f,  0.5773f}},  // Back BR
 
 	};
 
@@ -576,7 +599,14 @@ void InitGraphics()
 }
 
 void RenderFrame() 
-{	
+{
+
+	static double t = 0.0f;
+	t += 0.0001f;
+	cube1.pos.x = sin(t);
+	cube1.pos.y = cos(t) * 0.75;
+	cube1.pos.z = sin(t) * 0.75;
+
 	// Clear the back buffer the color parameter
 	g_pDeviceContext->ClearRenderTargetView(g_backbuffer, clearColor);
 	g_pDeviceContext->ClearDepthStencilView(g_ZBuffer, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
@@ -598,6 +628,28 @@ void RenderFrame()
 	world = cube1.GetWorldMatrix();
 	cBuffer.WVP = world * view * projection;
 
+	// Lighting
+	// Ambient
+	cBuffer.ambientLightCol = ambientLightColour;
+	// Directional
+	cBuffer.directionalLightCol = directionalLightColour;
+	XMMATRIX transpose = XMMatrixTranspose(world);
+	cBuffer.directionalLightDir = XMVector3Transform(directionalLightShinesFrom, transpose);
+	// Point Light
+	for (size_t i = 0; i< MAX_POINT_LIGHTS; ++i)
+	{
+		if(!pointLights[i].enabled)
+			continue;
+
+		XMMATRIX inverse = XMMatrixInverse(nullptr, world);
+
+		cBuffer.pointLights[i].position = XMVector3Transform(pointLights[i].position, inverse);
+		cBuffer.pointLights[i].colour = pointLights[i].colour;
+		cBuffer.pointLights[i].strength = pointLights[i].strength;
+		cBuffer.pointLights[i].enabled = pointLights[i].enabled;
+
+	}
+
 	// Update constant buffer
 	g_pDeviceContext->UpdateSubresource(pCBuffer, 0, NULL, &cBuffer, 0, 0);
 	g_pDeviceContext->VSSetConstantBuffers(0, 1, &pCBuffer);
@@ -609,12 +661,11 @@ void RenderFrame()
 	g_pDeviceContext->DrawIndexed(36, 0, 0);
 
 
-
-	world = cube2.GetWorldMatrix();
+	/*world = cube2.GetWorldMatrix();
 	cBuffer.WVP = world * view * projection;
 	g_pDeviceContext->UpdateSubresource(pCBuffer, 0, NULL, &cBuffer, 0, 0);
 	g_pDeviceContext->VSSetConstantBuffers(0, 1, &pCBuffer);
-	g_pDeviceContext->DrawIndexed(36, 0, 0);
+	g_pDeviceContext->DrawIndexed(36, 0, 0);*/
 
 
 	pText->AddText("Hello World", -1, +1, 0.075f);
@@ -670,4 +721,69 @@ void InitScene()
 {
 	cube1.pos = XMFLOAT3(0.7f, 0.0f, 3.0f);
 	cube2.rot = XMFLOAT3(0.0f, XMConvertToRadians(45), 0.0f);
+
+	pointLights[0] = { XMVECTOR{1.5f,0,-1}, {0.9,0,0.85f},10,true };
+	pointLights[1] = { XMVECTOR{-1.5f,0,-1}, {0,0.9,0.85f},20,true };
+}
+
+void HandleInput()
+{
+	auto kbState = Keyboard::Get().GetState();
+	kbTracker.Update(kbState);
+
+	//if (kbTracker.pressed.Space)
+	//	cout << "Space Pressed" << endl;
+
+	//if (kbTracker.released.Space)
+	//	cout << "Space Released" << endl;
+
+	//if (kbTracker.lastState.Space)
+	//	cout << "Space Held" << endl;
+
+	if(kbState.Escape)
+		PostQuitMessage(0);
+
+	if(kbState.W)
+	{
+		g_camera.x += XMVectorGetX(g_camera.ForwardVector()) * 0.0025f;
+		g_camera.z += XMVectorGetZ(g_camera.ForwardVector()) * 0.0025f;
+	}
+
+	if(kbState.S)
+	{
+		g_camera.x -= XMVectorGetX(g_camera.ForwardVector()) * 0.0025f;
+		g_camera.z -= XMVectorGetZ(g_camera.ForwardVector()) * 0.0025f;
+	}
+
+	if(kbState.A)
+	{
+		g_camera.x += XMVectorGetX(g_camera.RightVector()) * 0.0025f;
+		g_camera.z += XMVectorGetZ(g_camera.RightVector()) * 0.0025f;
+	}
+
+	if(kbState.D)
+	{
+		g_camera.x -= XMVectorGetX(g_camera.RightVector()) * 0.0025f;
+		g_camera.z -= XMVectorGetZ(g_camera.RightVector()) * 0.0025f;
+	}
+
+
+	auto msState = Mouse::Get().GetState();
+	mbTracker.Update(msState);
+
+	float sensivity = XM_2PI * 0.00025f;
+	g_camera.yaw += msState.x * sensivity;
+	g_camera.pitch += msState.y * sensivity;
+
+	if(mbTracker.leftButton == Mouse::ButtonStateTracker::PRESSED) // Can be HELD, RELEASED, PRESSED
+	{
+		// Reset camera
+		g_camera.x = 0.0f;
+		g_camera.y = 0.0f;
+		g_camera.z = 0.0f;
+		g_camera.pitch = XM_PIDIV2;
+		g_camera.yaw = 0.0f;
+	}
+
+
 }

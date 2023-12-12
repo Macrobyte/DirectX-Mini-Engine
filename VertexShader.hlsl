@@ -1,8 +1,21 @@
+#define MAX_POINT_LIGHTS 8
+
+struct PointLight
+{
+    float4 position;
+    float4 colour;
+
+    float strength;
+    bool enabled;
+    float padding;
+};
+
 struct VIn
 {
     float3 position : POSITION;
     float4 color : COLOR;
     float2 uv : TEXCOORD0;
+    float3 normal : NORMAL;
 };
 
 
@@ -17,13 +30,46 @@ struct VOut
 cbuffer CBuffer0
 {
     matrix WVP; // 64 bytes
+	float4 ambientLightCol;
+	float4 directionalLightDir;
+    float4 directionalLightCol;
+    PointLight pointLights[MAX_POINT_LIGHTS];
 };
 
 VOut main( VIn input )
 {
     VOut output;
+
+    // Position
     output.position = mul(WVP, float4(input.position, 1));
-    output.color = input.color;
+    // Texture Coords
     output.uv = input.uv;
+
+    // Lighting
+    float diffuseAmount = dot(directionalLightDir.xyz, input.normal);
+    diffuseAmount = saturate(diffuseAmount);
+
+    float3 directionalFinal = directionalLightCol * diffuseAmount;
+
+    // Point Light
+    float3 pointFinal = float3(0, 0, 0);
+    for (int i = 0; i < MAX_POINT_LIGHTS; ++i)
+    {
+	    if(!pointLights[i].enabled)
+            continue;
+
+        float3 pointLightDir = normalize(pointLights[i].position - input.position);
+        float pointLightDistance = length(pointLights[i].position - input.position);
+        float pointLightAttenuation = pointLights[i].strength / (pointLightDistance * pointLightDistance + pointLights[i].strength); // A = Strength / d^2+Strength
+        float pointAmount = dot(pointLightDir.xyz, input.normal) * pointLightAttenuation;
+        pointAmount = saturate(pointAmount);
+        pointFinal += pointLights[i].colour * pointAmount * 3;
+
+    }
+	
+
+    // Final Colour
+    output.color = saturate(ambientLightCol + float4(directionalFinal, 1) + float4(pointFinal, 1));
+
     return output;
 }
