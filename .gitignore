@@ -100,7 +100,7 @@ StyleCopReport.xml
 *.scc
 
 # Custom .ignores
-Models/.obj
+!Models/cube.obj
 
 
 # Chutzpah Test files
