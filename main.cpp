@@ -13,7 +13,8 @@
 
 #include "GameWindow.h"
 
-#include <WICTextureLoader.h>>
+#include <WICTextureLoader.h>
+#include <DDSTextureLoader.h>
 
 #include <Mouse.h>
 #include <Keyboard.h>
@@ -32,7 +33,7 @@ XMVECTORF32 clearColor = Colors::Teal; // Default clear color
 // Direct3D Variables
 IDXGISwapChain* g_pSwapChain = NULL; // The pointer to the swap chain interface
 ID3D11Device* g_pDevice = NULL; // The pointer to our Direct3D device interface
-ID3D11DeviceContext* g_pDeviceContext = NULL; // The pointer to our Direct3D device context
+ID3D11DeviceContext* g_devcon = NULL; // The pointer to our Direct3D device context
 ID3D11RenderTargetView* g_backbuffer = NULL; // A view to access our back buffer
 
 ID3D11DepthStencilView* g_ZBuffer = NULL; // The pointer to our depth buffer
@@ -76,7 +77,10 @@ struct CBUFFER0
 
 };
 
-
+struct CBufferSkybox
+{
+	XMMATRIX WVP;
+};
 
 // Transform
 struct Transform
@@ -173,6 +177,8 @@ HRESULT LoadVertexShader(LPCWSTR filename, ID3D11VertexShader** vs, ID3D11InputL
 HRESULT LoadPixelShader(LPCWSTR filename, ID3D11PixelShader** ps);
 void CleanD3D(); // Closes Direct3D and releases memory
 void RenderFrame();
+
+void DrawSkybox();
 
 void InitGraphics(); // Create the shape to render
 HRESULT InitPipeline(); // Loads and prepares the shaders
@@ -314,13 +320,14 @@ HRESULT InitPipeline()
 	LoadVertexShader(L"Compiled Shaders/VertexShader.cso", &g_pVertexShader, &g_pInputLayout);
 	LoadPixelShader(L"Compiled Shaders/PixelShader.cso", &g_pPixelShader);
 
-	//LoadVertexShader(L"Compiled Shaders/SkyboxVertexShader.cso", &pVSSkybox, &pLayoutSkybox);
+	g_devcon->VSSetShader(g_pVertexShader, 0, 0);
 
-	g_pDeviceContext->VSSetShader(g_pVertexShader, 0, 0);
+	g_devcon->IASetInputLayout(g_pInputLayout);
 
-	g_pDeviceContext->IASetInputLayout(g_pInputLayout);
+	g_devcon->PSSetShader(g_pPixelShader, 0, 0);
 
-	g_pDeviceContext->PSSetShader(g_pPixelShader, 0, 0);
+	LoadVertexShader(L"Compiled Shaders/SkyboxVShader.cso", &pVSSkybox, &pLayoutSkybox);
+	LoadPixelShader(L"Compiled Shaders/SkyboxPShader.cso", &pPSSkybox);
 
 	return S_OK;
 }
@@ -360,7 +367,7 @@ HRESULT InitD3D(HWND hWnd)
 		&g_pSwapChain,						 // Pointer to our swap chain
 		&g_pDevice,							 // Pointer to our Direct3D device
 		NULL,								 // Out param - will be set to chosen feature level
-		&g_pDeviceContext);					 // Pointer to our immediate device context
+		&g_devcon);					 // Pointer to our immediate device context
 	if (FAILED(hr)) return hr;
 
 	// Get the address of the back buffer
@@ -407,7 +414,7 @@ HRESULT InitD3D(HWND hWnd)
 	zBufferTexture->Release();
 
 	// Set the render target as the back buffer
-	g_pDeviceContext->OMSetRenderTargets(1, &g_backbuffer, g_ZBuffer);
+	g_devcon->OMSetRenderTargets(1, &g_backbuffer, g_ZBuffer);
 #pragma endregion	
 
 #pragma region Viewport
@@ -419,7 +426,7 @@ HRESULT InitD3D(HWND hWnd)
 	viewport.Height = GameWindow::GetWindowHeight(); // Height of viewport
 	viewport.MinDepth = 0; // Min depth of viewport
 	viewport.MaxDepth = 1; // Max depth of viewport
-	g_pDeviceContext->RSSetViewports(1, &viewport); // Set the viewport
+	g_devcon->RSSetViewports(1, &viewport); // Set the viewport
 #pragma endregion
 
 	D3D11_BLEND_DESC bd1 = { 0 };
@@ -473,7 +480,7 @@ HRESULT InitD3D(HWND hWnd)
 	dsDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
 	g_pDevice->CreateDepthStencilState(&dsDesc, &pDepthWriteSkybox);
 
-	g_pDeviceContext->RSSetState(pRasterizerState);
+	g_devcon->RSSetState(pRasterizerState);
 
 	return S_OK;
 
@@ -581,11 +588,11 @@ void InitGraphics()
 
 	};
 
-	pText = new Text2D("Textures/font1.png", g_pDevice, g_pDeviceContext);
+	pText = new Text2D("Textures/font1.png", g_pDevice, g_devcon);
 
-	model = new ObjFileModel{ (char*)"Models/cube.obj",g_pDevice,g_pDeviceContext };
+	model = new ObjFileModel{ (char*)"Models/cube.obj",g_pDevice,g_devcon };
 
-	
+	CreateDDSTextureFromFile(g_pDevice, g_devcon, L"skybox01.dds", NULL, &pSkyboxTexture);
 
 	// Create the vertex buffer
 	D3D11_BUFFER_DESC bd = { 0 };
@@ -603,11 +610,11 @@ void InitGraphics()
 
 	// Copy the vertices into the buffer
 	D3D11_MAPPED_SUBRESOURCE ms;
-	g_pDeviceContext->Map(g_pVertexBuffer, NULL, D3D11_MAP_WRITE_DISCARD, NULL, &ms); // Map the buffer
+	g_devcon->Map(g_pVertexBuffer, NULL, D3D11_MAP_WRITE_DISCARD, NULL, &ms); // Map the buffer
 
 	memcpy(ms.pData, vertices, sizeof(vertices)); // Copy the data 
 
-	g_pDeviceContext->Unmap(g_pVertexBuffer, NULL); // Unmap the buffer
+	g_devcon->Unmap(g_pVertexBuffer, NULL); // Unmap the buffer
 
 
 	unsigned int indices[] = { 0, 1, 2, 2, 3, 0, // Front face
@@ -640,8 +647,15 @@ void InitGraphics()
 	if(FAILED(g_pDevice->CreateBuffer(&cbd, NULL, &pCBuffer)))
 		OutputDebugString(L"Failed to create constant buffer\n");
 
+	cbd.ByteWidth = sizeof(CBufferSkybox);
 
-	CreateWICTextureFromFile(g_pDevice, g_pDeviceContext, L"Textures/Box.bmp", NULL, &pTexture);
+	if (FAILED(g_pDevice->CreateBuffer(&cbd, NULL, &pSkyboxCBuffer)))
+	{
+		OutputDebugString(L"Failed to create skybox constant buffer\n");
+	}
+
+
+	CreateWICTextureFromFile(g_pDevice, g_devcon, L"Textures/Box.bmp", NULL, &pTexture);
 
 	D3D11_SAMPLER_DESC samplerDesc;
 	ZeroMemory(&samplerDesc, sizeof(D3D11_SAMPLER_DESC));
@@ -657,26 +671,28 @@ void InitGraphics()
 void RenderFrame() 
 {
 
-	static double t = 0.0f;
-	t += 0.0001f;
-	cube1.pos.x = sin(t);
-	cube1.pos.y = cos(t) * 0.75;
-	cube1.pos.z = sin(t) * 0.75;
+	//static double t = 0.0f;
+	//t += 0.0001f;
+	//cube1.pos.x = sin(t);
+	//cube1.pos.y = cos(t) * 0.75;
+	//cube1.pos.z = sin(t) * 0.75;
 
 	// Clear the back buffer the color parameter
-	g_pDeviceContext->ClearRenderTargetView(g_backbuffer, clearColor);
-	g_pDeviceContext->ClearDepthStencilView(g_ZBuffer, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+	g_devcon->ClearRenderTargetView(g_backbuffer, clearColor);
+	g_devcon->ClearDepthStencilView(g_ZBuffer, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+
+	DrawSkybox();
 
 	// Select which vertex buffer, index buffer and primtive topology to use - PER MESH!!
 	UINT stride = sizeof(Vertex);
 	UINT offset = 0;
-	g_pDeviceContext->IASetVertexBuffers(0, 1, &g_pVertexBuffer, &stride, &offset);
-	g_pDeviceContext->IASetIndexBuffer(pIBuffer, DXGI_FORMAT_R32_UINT, 0);
-	g_pDeviceContext->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST); 	// Select which primitive we are using
+	g_devcon->IASetVertexBuffers(0, 1, &g_pVertexBuffer, &stride, &offset);
+	g_devcon->IASetIndexBuffer(pIBuffer, DXGI_FORMAT_R32_UINT, 0);
+	g_devcon->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST); 	// Select which primitive we are using
 
 	// View and projection matrices
 	XMMATRIX world, view, projection;
-	projection = XMMatrixPerspectiveFovLH(XMConvertToRadians(60), GameWindow::GetWindowWidth() / (float)GameWindow::GetWindowHeight(), 0.1f, 100.0f);
+	projection = XMMatrixPerspectiveFovLH(XMConvertToRadians(60), GameWindow::GetWindowWidth() / (float)GameWindow::GetWindowHeight(), 0.1f, 100);
 	view = g_camera.GetViewMatrix();
 
 	CBUFFER0 cBuffer;
@@ -707,33 +723,71 @@ void RenderFrame()
 	}
 
 	// Update constant buffer
-	g_pDeviceContext->UpdateSubresource(pCBuffer, 0, NULL, &cBuffer, 0, 0);
-	g_pDeviceContext->VSSetConstantBuffers(0, 1, &pCBuffer);
+	g_devcon->UpdateSubresource(pCBuffer, 0, NULL, &cBuffer, 0, 0);
+	g_devcon->VSSetConstantBuffers(0, 1, &pCBuffer);
 
 	// Textures
-	g_pDeviceContext->PSSetSamplers(0, 1, &pSampler);
-	g_pDeviceContext->PSSetShaderResources(0, 1, &pTexture); 
+	g_devcon->PSSetSamplers(0, 1, &pSampler);
+	g_devcon->PSSetShaderResources(0, 1, &pTexture); 
 
 	//g_pDeviceContext->DrawIndexed(36, 0, 0);
 	model->Draw();
 
-	/*world = cube2.GetWorldMatrix();
-	cBuffer.WVP = world * view * projection;
-	g_pDeviceContext->UpdateSubresource(pCBuffer, 0, NULL, &cBuffer, 0, 0);
-	g_pDeviceContext->VSSetConstantBuffers(0, 1, &pCBuffer);
-	g_pDeviceContext->DrawIndexed(36, 0, 0);*/
+	//world = cube2.GetWorldMatrix();
+	//cBuffer.WVP = world * view * projection;
+	//g_devcon->UpdateSubresource(pCBuffer, 0, NULL, &cBuffer, 0, 0);
+	//g_devcon->VSSetConstantBuffers(0, 1, &pCBuffer);
+	//g_devcon->DrawIndexed(36, 0, 0);
 
 
 	pText->AddText("Hello World", -1, +1, 0.075f);
-	g_pDeviceContext->OMSetBlendState(pAlphaBlendEnable, NULL, 0xffffffff);
+	g_devcon->OMSetBlendState(pAlphaBlendEnable, NULL, 0xffffffff);
 	pText->RenderText();
-	g_pDeviceContext->OMSetBlendState(pAlphaBlendDisable, NULL, 0xffffffff);
+	g_devcon->OMSetBlendState(pAlphaBlendDisable, NULL, 0xffffffff);
 
 
 	// Flip the back and front buffers around. Display on screen
 	g_pSwapChain->Present(0, 0);
 
 	
+}
+
+void DrawSkybox()
+{
+	// Front-face culling and disable depth write
+ 	g_devcon->OMSetDepthStencilState(pDepthWriteSkybox, 1);
+	g_devcon->RSSetState(pRasterSkybox);
+
+	// Set skybox shaders
+	g_devcon->VSSetShader(pVSSkybox, 0, 0);
+	g_devcon->PSSetShader(pPSSkybox, 0, 0);
+	g_devcon->IASetInputLayout(pLayoutSkybox);
+
+	// Constant buffer data
+	CBufferSkybox cbuf;
+	XMMATRIX translation, projection, view;
+
+	translation = XMMatrixTranslation(g_camera.x, g_camera.y, g_camera.z);
+	projection = XMMatrixPerspectiveFovLH(XMConvertToRadians(60), GameWindow::GetWindowWidth() / (float)GameWindow::GetWindowHeight(), 0.1f, 100);
+	view = g_camera.GetViewMatrix();
+	cbuf.WVP = translation * view * projection;
+	g_devcon->UpdateSubresource(pSkyboxCBuffer, 0, 0, &cbuf, 0, 0);
+
+	// Set shader resources
+	g_devcon->VSSetConstantBuffers(0, 1, &pSkyboxCBuffer);
+	g_devcon->PSSetSamplers(0, 1, &pSampler);
+	g_devcon->PSSetShaderResources(0, 1, &pSkyboxTexture);
+
+	model->Draw();
+
+	// Back-face culling and enable depth write
+	g_devcon->OMSetDepthStencilState(pDepthWriteSolid, 1);
+	g_devcon->RSSetState(pRasterSolid);
+
+	// Set standard shaders
+	g_devcon->VSSetShader(g_pVertexShader, 0, 0);
+	g_devcon->PSSetShader(g_pPixelShader, 0, 0);
+	g_devcon->IASetInputLayout(g_pInputLayout);
 }
 
 void CleanD3D()
@@ -757,7 +811,7 @@ void CleanD3D()
 	if(g_backbuffer) g_backbuffer->Release();
 	if(g_pSwapChain) g_pSwapChain->Release();
 	if(g_pDevice) g_pDevice->Release();
-	if(g_pDeviceContext) g_pDeviceContext->Release();
+	if(g_devcon) g_devcon->Release();
 	if (g_pInputLayout) g_pInputLayout->Release();
 	if (g_pVertexShader) g_pVertexShader->Release();
 	if (g_pPixelShader) g_pPixelShader->Release();
