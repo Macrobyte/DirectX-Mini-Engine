@@ -476,6 +476,7 @@ HRESULT InitD3D(HWND hWnd)
 	g_pDeviceContext->RSSetState(pRasterizerState);
 
 	return S_OK;
+
 }
 
 HRESULT LoadVertexShader(LPCWSTR filename, ID3D11VertexShader** vs, ID3D11InputLayout** il)
