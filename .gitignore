@@ -3,8 +3,6 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
-# Custom .ignores
-Models/**
 
 # User-specific files
 *.rsuser
@@ -100,6 +98,10 @@ StyleCopReport.xml
 *.pidb
 *.svclog
 *.scc
+
+# Custom .ignores
+Models/cube.obj
+
 
 # Chutzpah Test files
 _Chutzpah*
