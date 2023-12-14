@@ -3,8 +3,8 @@
 HINSTANCE GameWindow::hInstance = NULL;
 HWND GameWindow::hWnd = NULL;
 const wchar_t* GameWindow::winName = L"Default Window";
-int GameWindow::winWidth = 800;
-int GameWindow::winHeight = 600;
+int GameWindow::winWidth = 1280;
+int GameWindow::winHeight = 720;
 
 HRESULT GameWindow::InitWindow(WNDPROC winProc, HINSTANCE instance, int cmdShow, const wchar_t* windowName = L"Default Window", int windowWidth = winWidth, int windowHeight = winHeight)
 {

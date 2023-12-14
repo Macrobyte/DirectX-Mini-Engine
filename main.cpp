@@ -21,6 +21,8 @@
 
 #include "objfilemodel.h"
 
+#include <SpriteFont.h>
+
 
 using namespace DirectX;
 
@@ -165,6 +167,11 @@ ID3D11ShaderResourceView* pSkyboxTexture = NULL;
 ID3D11VertexShader* pVSSkybox = NULL;
 ID3D11PixelShader* pPSSkybox = NULL;
 ID3D11InputLayout* pLayoutSkybox = NULL;
+
+std::unique_ptr<SpriteBatch> spriteBatch;
+std::unique_ptr<SpriteFont> spriteFont;
+
+
 
 #pragma endregion
 
@@ -574,6 +581,10 @@ HRESULT LoadPixelShader(LPCWSTR filename, ID3D11PixelShader** ps)
 
 void InitGraphics()
 {
+
+	spriteBatch = std::make_unique<SpriteBatch>(g_devcon);
+	spriteFont = std::make_unique<SpriteFont>(g_pDevice, L"comicsans.spritefont");
+
 	Vertex vertices[] =
 	{
 		{XMFLOAT3{-0.5f, -0.5f, -0.5f}, XMFLOAT4{Colors::MediumVioletRed}, XMFLOAT2{0.0f, 1.0f}, XMFLOAT3{-0.5773f, -0.5773f, -0.5773f}},  // Front BL
@@ -671,11 +682,11 @@ void InitGraphics()
 void RenderFrame() 
 {
 
-	//static double t = 0.0f;
-	//t += 0.0001f;
-	//cube1.pos.x = sin(t);
-	//cube1.pos.y = cos(t) * 0.75;
-	//cube1.pos.z = sin(t) * 0.75;
+	static double t = 0.0f;
+	t += 0.0001f;
+	cube1.pos.x = sin(t);
+	cube1.pos.y = cos(t) * 0.75;
+	cube1.pos.z = sin(t) * 0.75;
 
 	// Clear the back buffer the color parameter
 	g_devcon->ClearRenderTargetView(g_backbuffer, clearColor);
@@ -733,17 +744,25 @@ void RenderFrame()
 	//g_pDeviceContext->DrawIndexed(36, 0, 0);
 	model->Draw();
 
-	//world = cube2.GetWorldMatrix();
-	//cBuffer.WVP = world * view * projection;
-	//g_devcon->UpdateSubresource(pCBuffer, 0, NULL, &cBuffer, 0, 0);
-	//g_devcon->VSSetConstantBuffers(0, 1, &pCBuffer);
-	//g_devcon->DrawIndexed(36, 0, 0);
+	world = cube2.GetWorldMatrix();
+	cBuffer.WVP = world * view * projection;
+	g_devcon->UpdateSubresource(pCBuffer, 0, NULL, &cBuffer, 0, 0);
+	g_devcon->VSSetConstantBuffers(0, 1, &pCBuffer);
 
+	model->Draw();
 
-	pText->AddText("Hello World", -1, +1, 0.075f);
+	spriteBatch->Begin();
+	spriteFont->DrawString(spriteBatch.get(), L"LETS GO COMIC SANSSS", XMFLOAT2(0, 0), Colors::Red, 0.0f, XMFLOAT2(0, 0), 2.0f);
+	spriteBatch->End();
+
+	//pText->AddText("Hello World", -1, +1, 0.075f);
 	g_devcon->OMSetBlendState(pAlphaBlendEnable, NULL, 0xffffffff);
-	pText->RenderText();
+	//pText->RenderText();
 	g_devcon->OMSetBlendState(pAlphaBlendDisable, NULL, 0xffffffff);
+
+	
+
+
 
 
 	// Flip the back and front buffers around. Display on screen
