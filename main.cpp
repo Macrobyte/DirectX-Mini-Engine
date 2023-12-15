@@ -208,28 +208,27 @@ int WINAPI WinMain(
 		MessageBox(NULL, L"Failed to create window", L"Critical Error!", MB_ICONERROR | MB_OK);
 	}
 
-	Renderer::GetInstance().Initialize(Window::GetWindowHandle());
+	//Renderer::GetInstance().Initialize(Window::GetWindowHandle());
 
 
+	if (FAILED(InitD3D(Window::GetWindowHandle())))
+	{
+		MessageBeep(MB_ICONSTOP);
+		MessageBox(NULL, L"Failed to create Direct3D device and context", L"Critical Error!", MB_ICONERROR | MB_OK);
+	}
 
-	//if (FAILED(InitD3D(Window::GetWindowHandle())))
-	//{
-	//	MessageBeep(MB_ICONSTOP);
-	//	MessageBox(NULL, L"Failed to create Direct3D device and context", L"Critical Error!", MB_ICONERROR | MB_OK);
-	//}
+	if (FAILED(InitPipeline()))
+	{
+		MessageBeep(MB_ICONSTOP); 
+		MessageBox(NULL, L"Failed to create pipeline", L"Critical Error!", MB_ICONERROR | MB_OK); 
+	}
 
-	//if (FAILED(InitPipeline()))
-	//{
-	//	MessageBeep(MB_ICONSTOP); 
-	//	MessageBox(NULL, L"Failed to create pipeline", L"Critical Error!", MB_ICONERROR | MB_OK); 
-	//}
+	InitGraphics();
 
-	//InitGraphics();
+	InitScene();
 
-	//InitScene();
-
-	//Mouse::Get().SetWindow(Window::GetWindowHandle());
-	//Mouse::Get().SetMode(Mouse::MODE_RELATIVE);
+	Mouse::Get().SetWindow(Window::GetWindowHandle());
+	Mouse::Get().SetMode(Mouse::MODE_RELATIVE);
 
 	// Used to hold windows event messages
 	MSG msg;
@@ -251,15 +250,15 @@ int WINAPI WinMain(
 		}
 		else
 		{
-			Renderer::GetInstance().Render();
+			//Renderer::GetInstance().Render();
 			// Game Code
-			//HandleInput();
-			//RenderFrame();
+			HandleInput();
+			RenderFrame();
 		}
 	}
 
-	Renderer::GetInstance().Release();
-	//CleanD3D();
+	//Renderer::GetInstance().Release();
+	CleanD3D();
 
 	return 0;
 }
@@ -438,20 +437,6 @@ HRESULT InitD3D(HWND hWnd)
 	g_devcon->RSSetViewports(1, &viewport); // Set the viewport
 #pragma endregion
 
-	D3D11_BLEND_DESC bd1 = { 0 };
-	bd1.RenderTarget[0].BlendEnable = TRUE;
-	bd1.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
-	bd1.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
-	bd1.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
-	bd1.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
-	bd1.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
-	bd1.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
-	bd1.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
-	bd1.IndependentBlendEnable = FALSE;
-	bd1.AlphaToCoverageEnable = FALSE;
-
-	g_pDevice->CreateBlendState(&bd1, &pAlphaBlendEnable);
-
 	D3D11_BLEND_DESC bd2 = { 0 };
 	bd2.RenderTarget[0].BlendEnable = FALSE;
 	bd2.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
@@ -587,47 +572,47 @@ void InitGraphics()
 	spriteBatch = std::make_unique<SpriteBatch>(g_devcon);
 	spriteFont = std::make_unique<SpriteFont>(g_pDevice, L"comicsans.spritefont");
 
-	Vertex vertices[] =
-	{
-		{XMFLOAT3{-0.5f, -0.5f, -0.5f}, XMFLOAT4{Colors::MediumVioletRed}, XMFLOAT2{0.0f, 1.0f}, XMFLOAT3{-0.5773f, -0.5773f, -0.5773f}},  // Front BL
-		{XMFLOAT3{-0.5f,  0.5f, -0.5f}, XMFLOAT4{Colors::PaleVioletRed  }, XMFLOAT2{0.0f, 0.0f}, XMFLOAT3{-0.5773f,  0.5773f, -0.5773f}},  // Front TL
-		{XMFLOAT3{ 0.5f,  0.5f, -0.5f}, XMFLOAT4{Colors::MediumVioletRed}, XMFLOAT2{1.0f, 0.0f}, XMFLOAT3{ 0.5773f,  0.5773f, -0.5773f}},  // Front TR
-		{XMFLOAT3{ 0.5f, -0.5f, -0.5f}, XMFLOAT4{Colors::PaleVioletRed  }, XMFLOAT2{1.0f, 1.0f}, XMFLOAT3{ 0.5773f, -0.5773f, -0.5773f}},  // Front BR
+	model = new ObjFileModel{ (char*)"Models/cube.obj",g_pDevice,g_devcon };
+	
+	CreateDDSTextureFromFile(g_pDevice, g_devcon, L"skybox01.dds", NULL, &pSkyboxTexture);
+	
+	//Vertex vertices[] =
+	//{
+	//	{XMFLOAT3{-0.5f, -0.5f, -0.5f}, XMFLOAT4{Colors::MediumVioletRed}, XMFLOAT2{0.0f, 1.0f}, XMFLOAT3{-0.5773f, -0.5773f, -0.5773f}},  // Front BL
+	//	{XMFLOAT3{-0.5f,  0.5f, -0.5f}, XMFLOAT4{Colors::PaleVioletRed  }, XMFLOAT2{0.0f, 0.0f}, XMFLOAT3{-0.5773f,  0.5773f, -0.5773f}},  // Front TL
+	//	{XMFLOAT3{ 0.5f,  0.5f, -0.5f}, XMFLOAT4{Colors::MediumVioletRed}, XMFLOAT2{1.0f, 0.0f}, XMFLOAT3{ 0.5773f,  0.5773f, -0.5773f}},  // Front TR
+	//	{XMFLOAT3{ 0.5f, -0.5f, -0.5f}, XMFLOAT4{Colors::PaleVioletRed  }, XMFLOAT2{1.0f, 1.0f}, XMFLOAT3{ 0.5773f, -0.5773f, -0.5773f}},  // Front BR
 
-		{XMFLOAT3{-0.5f, -0.5f,  0.5f}, XMFLOAT4{Colors::PaleVioletRed  }, XMFLOAT2{0.0f, 1.0f}, XMFLOAT3{-0.5773f, -0.5773f,  0.5773f}},  // Back BL
-		{XMFLOAT3{-0.5f,  0.5f,  0.5f}, XMFLOAT4{Colors::MediumVioletRed}, XMFLOAT2{0.0f, 0.0f}, XMFLOAT3{-0.5773f,  0.5773f,  0.5773f}},  // Back TL
-		{XMFLOAT3{ 0.5f,  0.5f,  0.5f}, XMFLOAT4{Colors::PaleVioletRed  }, XMFLOAT2{1.0f, 0.0f}, XMFLOAT3{ 0.5773f,  0.5773f,  0.5773f}},  // Back TR
-		{XMFLOAT3{ 0.5f, -0.5f,  0.5f}, XMFLOAT4{Colors::MediumVioletRed}, XMFLOAT2{1.0f, 1.0f}, XMFLOAT3{ 0.5773f, -0.5773f,  0.5773f}},  // Back BR
+	//	{XMFLOAT3{-0.5f, -0.5f,  0.5f}, XMFLOAT4{Colors::PaleVioletRed  }, XMFLOAT2{0.0f, 1.0f}, XMFLOAT3{-0.5773f, -0.5773f,  0.5773f}},  // Back BL
+	//	{XMFLOAT3{-0.5f,  0.5f,  0.5f}, XMFLOAT4{Colors::MediumVioletRed}, XMFLOAT2{0.0f, 0.0f}, XMFLOAT3{-0.5773f,  0.5773f,  0.5773f}},  // Back TL
+	//	{XMFLOAT3{ 0.5f,  0.5f,  0.5f}, XMFLOAT4{Colors::PaleVioletRed  }, XMFLOAT2{1.0f, 0.0f}, XMFLOAT3{ 0.5773f,  0.5773f,  0.5773f}},  // Back TR
+	//	{XMFLOAT3{ 0.5f, -0.5f,  0.5f}, XMFLOAT4{Colors::MediumVioletRed}, XMFLOAT2{1.0f, 1.0f}, XMFLOAT3{ 0.5773f, -0.5773f,  0.5773f}},  // Back BR
 
-	};
+	//};
 
 	//pText = new Text2D("Textures/font1.png", g_pDevice, g_devcon);
 
-	model = new ObjFileModel{ (char*)"Models/cube.obj",g_pDevice,g_devcon };
-
-	CreateDDSTextureFromFile(g_pDevice, g_devcon, L"skybox01.dds", NULL, &pSkyboxTexture);
-
 	// Create the vertex buffer
-	D3D11_BUFFER_DESC bd = { 0 };
-	bd.Usage = D3D11_USAGE_DYNAMIC;
-	bd.ByteWidth = sizeof(vertices);
-	bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-	bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-	
-	g_pDevice->CreateBuffer(&bd, NULL, &g_pVertexBuffer);
-	if (g_pVertexBuffer == 0)
-	{
-		OutputDebugString(L"Failed to create vertex buffer\n");
-		return;
-	}
+	//D3D11_BUFFER_DESC bd = { 0 };
+	//bd.Usage = D3D11_USAGE_DYNAMIC;
+	//bd.ByteWidth = sizeof(vertices);
+	//bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+	//bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+	//
+	//g_pDevice->CreateBuffer(&bd, NULL, &g_pVertexBuffer);
+	//if (g_pVertexBuffer == 0)
+	//{
+	//	OutputDebugString(L"Failed to create vertex buffer\n");
+	//	return;
+	//}
 
-	// Copy the vertices into the buffer
-	D3D11_MAPPED_SUBRESOURCE ms;
-	g_devcon->Map(g_pVertexBuffer, NULL, D3D11_MAP_WRITE_DISCARD, NULL, &ms); // Map the buffer
+	//// Copy the vertices into the buffer
+	//D3D11_MAPPED_SUBRESOURCE ms;
+	//g_devcon->Map(g_pVertexBuffer, NULL, D3D11_MAP_WRITE_DISCARD, NULL, &ms); // Map the buffer
 
-	memcpy(ms.pData, vertices, sizeof(vertices)); // Copy the data 
+	//memcpy(ms.pData, vertices, sizeof(vertices)); // Copy the data 
 
-	g_devcon->Unmap(g_pVertexBuffer, NULL); // Unmap the buffer
+	//g_devcon->Unmap(g_pVertexBuffer, NULL); // Unmap the buffer
 
 
 	unsigned int indices[] = { 0, 1, 2, 2, 3, 0, // Front face
@@ -638,18 +623,18 @@ void InitGraphics()
 							   4, 0, 3, 3, 7, 4 }; // Bottom face
 							   
 
-	// Fill in a buffer description.
-	D3D11_BUFFER_DESC bufferDesc = { 0 };
-	bufferDesc.Usage = D3D11_USAGE_DEFAULT;
-	bufferDesc.ByteWidth = sizeof(indices);
-	bufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
+	//// Fill in a buffer description.
+	//D3D11_BUFFER_DESC bufferDesc = { 0 };
+	//bufferDesc.Usage = D3D11_USAGE_DEFAULT;
+	//bufferDesc.ByteWidth = sizeof(indices);
+	//bufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
 
-	// Define the resource data.
-	D3D11_SUBRESOURCE_DATA InitData = { 0 };
-	InitData.pSysMem = indices;
+	//// Define the resource data.
+	//D3D11_SUBRESOURCE_DATA InitData = { 0 };
+	//InitData.pSysMem = indices;
 
-	if (FAILED(g_pDevice->CreateBuffer(&bufferDesc, &InitData, &pIBuffer)))
-		OutputDebugString(L"Failed to create index buffer\n");
+	//if (FAILED(g_pDevice->CreateBuffer(&bufferDesc, &InitData, &pIBuffer)))
+	//	OutputDebugString(L"Failed to create index buffer\n");
 
 
 	D3D11_BUFFER_DESC cbd = { 0 };
@@ -757,9 +742,6 @@ void RenderFrame()
 	spriteFont->DrawString(spriteBatch.get(), L"LETS GO COMIC SANSSS", XMFLOAT2(0, 0), Colors::Red, 0.0f, XMFLOAT2(0, 0), 2.0f);
 	spriteBatch->End();
 
-	//pText->AddText("Hello World", -1, +1, 0.075f);
-	g_devcon->OMSetBlendState(pAlphaBlendEnable, NULL, 0xffffffff);
-	//pText->RenderText();
 	g_devcon->OMSetBlendState(pAlphaBlendDisable, NULL, 0xffffffff);
 
 	

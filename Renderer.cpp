@@ -27,7 +27,7 @@ HRESULT Renderer::InitializeDirectX(HWND hWnd)
 
 #pragma region Create Device and Swap Chain
 	HRESULT hr;
-		
+
 	hr = D3D11CreateDeviceAndSwapChain(nullptr, // Which graphics adapter to use, NULL = default
 		D3D_DRIVER_TYPE_HARDWARE,				// Driver type to use
 		nullptr,								// Software driver handle, used when D3D_DRIVER_TYPE_SOFTWARE is used
@@ -41,7 +41,7 @@ HRESULT Renderer::InitializeDirectX(HWND hWnd)
 		nullptr,								// Supported feature level
 		&deviceContext);						// Device context address
 
-	if(FAILED(hr))
+	if (FAILED(hr))
 		return hr;
 
 	ID3D11Texture2D* backBufferTexture = nullptr;
@@ -57,12 +57,87 @@ HRESULT Renderer::InitializeDirectX(HWND hWnd)
 		return hr;
 
 	backBufferTexture->Release(); // Release back buffer texture as it is no longer needed
+#pragma endregion
 
-	deviceContext->OMSetRenderTargets(1, &renderTargetView, nullptr); // Set the back buffer as the current render target
+#pragma region Depth Stencil
+	D3D11_TEXTURE2D_DESC texture2DDesc = { 0 };
+	texture2DDesc.Width = Window::GetWindowWidth();
+	texture2DDesc.Height = Window::GetWindowHeight();
+	texture2DDesc.ArraySize = 1;
+	texture2DDesc.MipLevels = 1;
+	texture2DDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+	texture2DDesc.SampleDesc.Count = swapChainDesc.SampleDesc.Count; // Same sample description as the swap chain
+	texture2DDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+	texture2DDesc.Usage = D3D11_USAGE_DEFAULT;
+
+	ID3D11Texture2D* zBufferTexture;
+	if (FAILED(device->CreateTexture2D(&texture2DDesc, NULL, &zBufferTexture)))
+	{
+		OutputDebugString(L"Failed to create depth stencil texture\n");
+		return E_FAIL;
+	}
+
+	D3D11_DEPTH_STENCIL_VIEW_DESC depthStencilDesc;
+	ZeroMemory(&depthStencilDesc, sizeof(D3D11_DEPTH_STENCIL_VIEW_DESC));
+	depthStencilDesc.Format = texture2DDesc.Format;
+	depthStencilDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
+
+	if (FAILED(device->CreateDepthStencilView(zBufferTexture, &depthStencilDesc, &zBuffer)))
+	{
+		OutputDebugString(L"Failed to create depth stencil view\n");
+		return E_FAIL;
+	}
+
+	zBufferTexture->Release();
+#pragma endregion
+
+	deviceContext->OMSetRenderTargets(1, &renderTargetView, zBuffer); // Set the back buffer as the current render target
+
+	InitializeViewport();
+
+#pragma region Blend State
+	D3D11_BLEND_DESC blendState = { 0 };
+	blendState.RenderTarget[0].BlendEnable = FALSE;
+	blendState.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
+	blendState.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
+	blendState.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
+	blendState.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+	blendState.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
+	blendState.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
+	blendState.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+	blendState.IndependentBlendEnable = FALSE;
+	blendState.AlphaToCoverageEnable = FALSE;
+
+	device->CreateBlendState(&blendState, &alphaBlend);
 
 #pragma endregion
 
-	InitializeViewport();
+#pragma region Culling
+	// Backface culling
+	D3D11_RASTERIZER_DESC rsDesc;
+	ZeroMemory(&rsDesc, sizeof(D3D11_RASTERIZER_DESC));
+	rsDesc.CullMode = D3D11_CULL_BACK;
+	rsDesc.FillMode = D3D11_FILL_SOLID;
+
+	device->CreateRasterizerState(&rsDesc, &rasterSolid);
+
+	// Frontface culling
+	rsDesc.CullMode = D3D11_CULL_FRONT;
+	device->CreateRasterizerState(&rsDesc, &rasterSkybox);
+
+	// Depth writing enabled
+	D3D11_DEPTH_STENCIL_DESC dsDesc = { 0 };
+	dsDesc.DepthEnable = true;
+	dsDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+	dsDesc.DepthFunc = D3D11_COMPARISON_LESS;
+	device->CreateDepthStencilState(&dsDesc, &depthWriteSolid);
+
+	// Depth writing disabled
+	dsDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
+	device->CreateDepthStencilState(&dsDesc, &depthWriteSkybox);
+
+	deviceContext->RSSetState(rasterState);
+#pragma endregion
 
 	std::cout << "DirectX initialized" << std::endl;
 

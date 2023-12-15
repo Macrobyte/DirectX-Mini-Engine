@@ -15,10 +15,19 @@ public:
 
 private:
 
-	IDXGISwapChain* swapChain;
 	ID3D11Device* device;
 	ID3D11DeviceContext* deviceContext;
+
+	IDXGISwapChain* swapChain;
 	ID3D11RenderTargetView* renderTargetView;
+	ID3D11DepthStencilView* zBuffer;
+	ID3D11BlendState* alphaBlend;
+
+	ID3D11RasterizerState* rasterSolid;
+	ID3D11RasterizerState* rasterSkybox;
+	ID3D11DepthStencilState* depthWriteSolid;
+	ID3D11DepthStencilState* depthWriteSkybox;
+	ID3D11RasterizerState* rasterState;
 
 	ID3D11VertexShader* vertexShader;
 	ID3D11PixelShader* pixelShader;
@@ -40,7 +49,6 @@ public:
 #pragma region Getters
 	ID3D11Device* GetDevice() { return device; }
 	ID3D11DeviceContext* GetDeviceContext() { return deviceContext; }
-	IDXGISwapChain* GetSwapChain() { return swapChain; }
 #pragma endregion
 };
 
