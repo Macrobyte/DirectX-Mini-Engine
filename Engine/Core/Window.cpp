@@ -1,23 +1,27 @@
-#include "GameWindow.h"
+#include "Window.h"
 
-HINSTANCE GameWindow::hInstance = NULL;
-HWND GameWindow::hWnd = NULL;
-const wchar_t* GameWindow::winName = L"Default Window";
-int GameWindow::winWidth = 1280;
-int GameWindow::winHeight = 720;
+HINSTANCE Window::hInstance = NULL;
+HWND Window::hWnd = NULL;
+const wchar_t* Window::winName = L"Default Window";
+int Window::winWidth = 0;
+int Window::winHeight = 0;
 
-HRESULT GameWindow::InitWindow(WNDPROC winProc, HINSTANCE instance, int cmdShow, const wchar_t* windowName = L"Default Window", int windowWidth = winWidth, int windowHeight = winHeight)
+HRESULT Window::Initialize(WNDPROC winProc, HINSTANCE instance, int cmdShow, const wchar_t* windowName = L"Default Window", int windowWidth = 800, int windowHeight = 600)
 {
 	winName = windowName;
 
 	hInstance = instance; // Store our app handle
+
+	winWidth = windowWidth;
+
+	winHeight = windowHeight;
 
 	// Create a window class
 	WNDCLASSEX wc = {};
 	wc.cbSize = sizeof(WNDCLASSEX); // Size of the struct
 	wc.style = CS_HREDRAW | CS_VREDRAW; // Style of the window
 	wc.lpfnWndProc = winProc; // Our window procedure function, make sure it handles window creation or calls DefWindowProc(..)
-	wc.hInstance = hInstance; // Give our app handle to the window
+	wc.hInstance = instance; // Give our app handle to the window
 	wc.lpszClassName = L"WindowClass1"; // Windows will sotre our window class under this name
 	wc.hbrBackground = (HBRUSH)COLOR_WINDOW; // Set the background colour of the window
 	// Register the class with above struct. If it fails, if block will execute
@@ -25,7 +29,7 @@ HRESULT GameWindow::InitWindow(WNDPROC winProc, HINSTANCE instance, int cmdShow,
 		return E_FAIL;
 
 	// Adjust the window dimensions so that top window bar is not taking pixels away from our app
-	RECT wr = { 0, 0, winWidth, winHeight }; // Set the size, but not the position
+	RECT wr = { 0, 0, windowWidth, windowHeight }; // Set the size, but not the position
 	AdjustWindowRect(&wr, WS_OVERLAPPEDWINDOW, FALSE);
 
 	// Create the window and use the result as the handle
@@ -40,7 +44,7 @@ HRESULT GameWindow::InitWindow(WNDPROC winProc, HINSTANCE instance, int cmdShow,
 		wr.bottom - wr.top, // Height of the window
 		NULL, // No parent window, null
 		NULL, // No menus, null
-		hInstance, // App handle
+		instance, // App handle
 		NULL);
 
 	if (hWnd == NULL) 

@@ -9,9 +9,8 @@
 #include <d3dcompiler.h>
 #include <d3d11shader.h>
 #include "ReadData.h"
-#include "text2D.h"
 
-#include "GameWindow.h"
+#include "Engine/Core/Window.h"
 
 #include <WICTextureLoader.h>
 #include <DDSTextureLoader.h>
@@ -23,6 +22,7 @@
 
 #include <SpriteFont.h>
 
+#include "Renderer.h"
 
 using namespace DirectX;
 
@@ -138,7 +138,6 @@ Camera g_camera;
 ID3D11ShaderResourceView* pTexture = NULL; // Texture
 ID3D11SamplerState* pSampler = NULL; // Sampler
 
-Text2D* pText;
 
 ID3D11BlendState* pAlphaBlendEnable = NULL;
 ID3D11BlendState* pAlphaBlendDisable = NULL;
@@ -170,9 +169,6 @@ ID3D11InputLayout* pLayoutSkybox = NULL;
 
 std::unique_ptr<SpriteBatch> spriteBatch;
 std::unique_ptr<SpriteFont> spriteFont;
-
-
-
 #pragma endregion
 
 #pragma region Function Properties
@@ -197,40 +193,45 @@ void InitScene();
 void HandleInput();
 #pragma endregion
 
-
 // Entry point for our windows application
 int WINAPI WinMain(
 	_In_ HINSTANCE hInstance, // Handle to this instance (our app loaded into memory)
 	_In_opt_ HINSTANCE hPrevInstance,
 	_In_ LPSTR lpCmdLine, // Command line arguments
-	_In_ int nCmdShow) // How the window is to be shown (e.g. maximised, minimised, etc.
+	_In_ int nCmdShow) // How the window is to be shown (e.g. maximized, minimized, etc.
 {
 	OpenConsole();
 
-	if (FAILED(GameWindow::InitWindow(WindowProc, hInstance, nCmdShow, L"Game", 800, 600)))
+	if (FAILED(Window::Initialize(WindowProc, hInstance, nCmdShow, L"Game", 1280, 720)))
 	{
 		MessageBeep(MB_ICONSTOP);
 		MessageBox(NULL, L"Failed to create window", L"Critical Error!", MB_ICONERROR | MB_OK);
 	}
 
-	if (FAILED(InitD3D(GameWindow::GetWindowHandle())))
+	if(FAILED(Renderer::GetInstance().Initialize(Window::GetWindowHandle())))
 	{
 		MessageBeep(MB_ICONSTOP);
-		MessageBox(NULL, L"Failed to create Direct3D device and context", L"Critical Error!", MB_ICONERROR | MB_OK);
+		MessageBox(NULL, L"Failed to create renderer", L"Critical Error!", MB_ICONERROR | MB_OK);
 	}
 
-	if (FAILED(InitPipeline()))
-	{
-		MessageBeep(MB_ICONSTOP); 
-		MessageBox(NULL, L"Failed to create pipeline", L"Critical Error!", MB_ICONERROR | MB_OK); 
-	}
+	//if (FAILED(InitD3D(Window::GetWindowHandle())))
+	//{
+	//	MessageBeep(MB_ICONSTOP);
+	//	MessageBox(NULL, L"Failed to create Direct3D device and context", L"Critical Error!", MB_ICONERROR | MB_OK);
+	//}
 
-	InitGraphics();
+	//if (FAILED(InitPipeline()))
+	//{
+	//	MessageBeep(MB_ICONSTOP); 
+	//	MessageBox(NULL, L"Failed to create pipeline", L"Critical Error!", MB_ICONERROR | MB_OK); 
+	//}
 
-	InitScene();
+	//InitGraphics();
 
-	Mouse::Get().SetWindow(GameWindow::GetWindowHandle());
-	Mouse::Get().SetMode(Mouse::MODE_RELATIVE);
+	//InitScene();
+
+	//Mouse::Get().SetWindow(Window::GetWindowHandle());
+	//Mouse::Get().SetMode(Mouse::MODE_RELATIVE);
 
 	// Used to hold windows event messages
 	MSG msg;
@@ -252,13 +253,15 @@ int WINAPI WinMain(
 		}
 		else
 		{
+			Renderer::GetInstance().Render();
 			// Game Code
-			HandleInput();
-			RenderFrame();
+			//HandleInput();
+			//RenderFrame();
 		}
 	}
 
-	CleanD3D();
+	Renderer::GetInstance().Release();
+	//CleanD3D();
 
 	return 0;
 }
@@ -348,8 +351,8 @@ HRESULT InitD3D(HWND hWnd)
 	// Fill the swap chain description struct
 	scd.BufferCount = 1;
 	scd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM; //32-bit color
-	scd.BufferDesc.Width = GameWindow::GetWindowWidth();
-	scd.BufferDesc.Height = GameWindow::GetWindowHeight();
+	scd.BufferDesc.Width = Window::GetWindowWidth();
+	scd.BufferDesc.Height = Window::GetWindowHeight();
 	scd.BufferDesc.RefreshRate.Numerator = 60; // 60 FPS
 	scd.BufferDesc.RefreshRate.Denominator = 1; // 60/1 = 60 FPS
 	scd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT; // How swap chain is to be used
@@ -375,6 +378,7 @@ HRESULT InitD3D(HWND hWnd)
 		&g_pDevice,							 // Pointer to our Direct3D device
 		NULL,								 // Out param - will be set to chosen feature level
 		&g_devcon);					 // Pointer to our immediate device context
+
 	if (FAILED(hr)) return hr;
 
 	// Get the address of the back buffer
@@ -391,8 +395,8 @@ HRESULT InitD3D(HWND hWnd)
 	pBackBufferTexture->Release();
 
 	D3D11_TEXTURE2D_DESC tex2dDesc = { 0 };
-	tex2dDesc.Width = GameWindow::GetWindowWidth();
-	tex2dDesc.Height = GameWindow::GetWindowHeight();
+	tex2dDesc.Width = Window::GetWindowWidth();
+	tex2dDesc.Height = Window::GetWindowHeight();
 	tex2dDesc.ArraySize = 1;
 	tex2dDesc.MipLevels = 1;
 	tex2dDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
@@ -429,8 +433,8 @@ HRESULT InitD3D(HWND hWnd)
 	D3D11_VIEWPORT viewport = {};
 	viewport.TopLeftX = 0; // Top left x position of viewport
 	viewport.TopLeftY = 0; // Top left y position of viewport
-	viewport.Width = GameWindow::GetWindowWidth(); // Width of viewport
-	viewport.Height = GameWindow::GetWindowHeight(); // Height of viewport
+	viewport.Width = Window::GetWindowWidth(); // Width of viewport
+	viewport.Height = Window::GetWindowHeight(); // Height of viewport
 	viewport.MinDepth = 0; // Min depth of viewport
 	viewport.MaxDepth = 1; // Max depth of viewport
 	g_devcon->RSSetViewports(1, &viewport); // Set the viewport
@@ -599,7 +603,7 @@ void InitGraphics()
 
 	};
 
-	pText = new Text2D("Textures/font1.png", g_pDevice, g_devcon);
+	//pText = new Text2D("Textures/font1.png", g_pDevice, g_devcon);
 
 	model = new ObjFileModel{ (char*)"Models/cube.obj",g_pDevice,g_devcon };
 
@@ -703,7 +707,7 @@ void RenderFrame()
 
 	// View and projection matrices
 	XMMATRIX world, view, projection;
-	projection = XMMatrixPerspectiveFovLH(XMConvertToRadians(60), GameWindow::GetWindowWidth() / (float)GameWindow::GetWindowHeight(), 0.1f, 100);
+	projection = XMMatrixPerspectiveFovLH(XMConvertToRadians(60), Window::GetWindowWidth() / (float)Window::GetWindowHeight(), 0.1f, 100);
 	view = g_camera.GetViewMatrix();
 
 	CBUFFER0 cBuffer;
@@ -787,7 +791,7 @@ void DrawSkybox()
 	XMMATRIX translation, projection, view;
 
 	translation = XMMatrixTranslation(g_camera.x, g_camera.y, g_camera.z);
-	projection = XMMatrixPerspectiveFovLH(XMConvertToRadians(60), GameWindow::GetWindowWidth() / (float)GameWindow::GetWindowHeight(), 0.1f, 100);
+	projection = XMMatrixPerspectiveFovLH(XMConvertToRadians(60), Window::GetWindowWidth() / (float)Window::GetWindowHeight(), 0.1f, 100);
 	view = g_camera.GetViewMatrix();
 	cbuf.WVP = translation * view * projection;
 	g_devcon->UpdateSubresource(pSkyboxCBuffer, 0, 0, &cbuf, 0, 0);
@@ -812,7 +816,7 @@ void DrawSkybox()
 void CleanD3D()
 {
 	// Close and release all existing COM objects
-	delete pText;
+	//delete pText;
 	delete model;
 	if(pRasterSolid) pRasterSolid->Release();
 	if(pRasterSkybox) pRasterSkybox->Release();
@@ -850,8 +854,6 @@ void OpenConsole()
 		freopen_s(&fp, "CONOUT$", "w", stdout);
 		freopen_s(&fp, "CONOUT$", "w", stderr);
 		std::ios::sync_with_stdio(true);
-
-		std::cout << "Hello side console!!" << std::endl;
 	}
 }
 
