@@ -208,11 +208,9 @@ int WINAPI WinMain(
 		MessageBox(NULL, L"Failed to create window", L"Critical Error!", MB_ICONERROR | MB_OK);
 	}
 
-	if(FAILED(Renderer::GetInstance().Initialize(Window::GetWindowHandle())))
-	{
-		MessageBeep(MB_ICONSTOP);
-		MessageBox(NULL, L"Failed to create renderer", L"Critical Error!", MB_ICONERROR | MB_OK);
-	}
+	Renderer::GetInstance().Initialize(Window::GetWindowHandle());
+
+
 
 	//if (FAILED(InitD3D(Window::GetWindowHandle())))
 	//{

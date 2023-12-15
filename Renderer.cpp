@@ -1,9 +1,11 @@
 #include "Renderer.h"
 
 #include <DirectXColors.h>
+#include <d3dcompiler.h>
 #include <iostream>
 
 #include "Engine/Core/Window.h"
+#include "ReadData.h"
 
 HRESULT Renderer::InitializeDirectX(HWND hWnd)
 {
@@ -82,12 +84,129 @@ void Renderer::InitializeViewport()
 	std::cout << "Viewport initialized" << std::endl;
 }
 
+HRESULT Renderer::InitializePipeline()
+{
+	if (FAILED(LoadVertexShader(L"Compiled Shaders/VertexShader.cso", &vertexShader, &inputLayout)))
+	{
+		OutputDebugString(L"Failed to load vertex shader\n");
+		return E_FAIL;
+	}
+
+	if (FAILED(LoadPixelShader(L"Compiled Shaders/PixelShader.cso", &pixelShader)))
+	{
+		OutputDebugString(L"Failed to load pixel shader\n");
+		return E_FAIL;
+	}
+
+	if (FAILED(LoadVertexShader(L"Compiled Shaders/SkyboxVShader.cso", &vertexShader, &inputLayout)))
+	{
+		OutputDebugString(L"Failed to load vertex shader\n");
+		return E_FAIL;
+	}
+
+	if (FAILED(LoadPixelShader(L"Compiled Shaders/SkyboxPShader.cso", &pixelShader)))
+	{
+		OutputDebugString(L"Failed to load pixel shader\n");
+		return E_FAIL;
+	}
+
+
+
+	return S_OK;
+}
+
+HRESULT Renderer::LoadVertexShader(LPCWSTR filename, ID3D11VertexShader** vertexShader, ID3D11InputLayout** inputLayout)
+{
+	auto vertexShaderBytecode = DX::ReadData(filename);
+
+	if (FAILED(device->CreateVertexShader(vertexShaderBytecode.data(), vertexShaderBytecode.size(), NULL, vertexShader)))
+	{
+		OutputDebugString(L"Failed to create vertex shader\n");
+		return E_FAIL;
+	}
+
+	deviceContext->VSSetShader(this->vertexShader, 0, 0);
+
+	ID3D11ShaderReflection* vertexShaderReflection = NULL;
+
+	if (FAILED(D3DReflect(vertexShaderBytecode.data(), vertexShaderBytecode.size(), IID_ID3D11ShaderReflection, (void**)&vertexShaderReflection)))
+	{
+		OutputDebugString(L"Failed to reflect vertex shader\n");
+		return E_FAIL;
+	}
+
+	D3D11_SHADER_DESC shaderDesc;
+	vertexShaderReflection->GetDesc(&shaderDesc);
+
+	// Read input layout description from shader info
+	D3D11_SIGNATURE_PARAMETER_DESC* signatureParamDesc = new D3D11_SIGNATURE_PARAMETER_DESC[shaderDesc.InputParameters]{ 0 }; 
+	for (UINT i = 0; i < shaderDesc.InputParameters; i++)
+	{
+		vertexShaderReflection->GetInputParameterDesc(i, &signatureParamDesc[i]);
+	}
+
+	// Signature param desk masks as follows: float4 = 15, float3 = 7, float2 = 3, float[1] = 1. These are bitmasks
+	D3D11_INPUT_ELEMENT_DESC* ied = new D3D11_INPUT_ELEMENT_DESC[shaderDesc.InputParameters]{ 0 };
+	for (size_t i = 0; i < shaderDesc.InputParameters; i++)
+	{
+		ied[i].SemanticName = signatureParamDesc[i].SemanticName;
+		ied[i].SemanticIndex = signatureParamDesc[i].SemanticIndex;
+		if (signatureParamDesc[i].ComponentType == D3D_REGISTER_COMPONENT_FLOAT32)
+		{
+			switch (signatureParamDesc[i].Mask)
+			{
+			case 1:  ied[i].Format = DXGI_FORMAT_R32_FLOAT;			 break;	// Float 1
+			case 3:  ied[i].Format = DXGI_FORMAT_R32G32_FLOAT;		 break;	// Float 2
+			case 7:	 ied[i].Format = DXGI_FORMAT_R32G32B32_FLOAT;	 break;	// Float 3
+			case 15: ied[i].Format = DXGI_FORMAT_R32G32B32A32_FLOAT; break; // Float 4
+			default: break;
+			}
+		}// The above only covers ---x, --yx, -zyx, wzyx. It may be possible for a mask to be -yx- or yx- or zyx- (6, 12, 14)
+		ied[i].InputSlot = 0;
+		ied[i].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
+		ied[i].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
+		ied[i].InstanceDataStepRate = 0;
+	}
+
+
+	if (FAILED(device->CreateInputLayout(ied, shaderDesc.InputParameters, vertexShaderBytecode.data(), vertexShaderBytecode.size(), inputLayout)))
+	{
+		OutputDebugString(L"Failed to create input layout\n");
+		return E_FAIL;
+	}
+
+	deviceContext->IASetInputLayout(this->inputLayout);
+
+	delete[] signatureParamDesc;
+	delete[] ied;
+
+	return S_OK;
+}
+
+HRESULT Renderer::LoadPixelShader(LPCWSTR filename, ID3D11PixelShader** pixelShader)
+{
+	auto pixelShaderBytecode = DX::ReadData(filename);
+
+	if (FAILED(device->CreatePixelShader(pixelShaderBytecode.data(), pixelShaderBytecode.size(), NULL, pixelShader)))
+	{
+		OutputDebugString(L"Failed to create pixel shader\n");
+		return S_OK;
+	}
+}
+
 HRESULT Renderer::Initialize(HWND hWnd)
 {
 	if(FAILED(InitializeDirectX(hWnd)))
 	{
 		MessageBeep(MB_ICONSTOP);
 		MessageBox(nullptr, L"Failed to initialize DirectX", L"Critical Error!", MB_ICONERROR | MB_OK);
+		return E_FAIL;
+	}
+
+	if (FAILED(InitializePipeline()))
+	{
+		MessageBeep(MB_ICONSTOP);
+		MessageBox(nullptr, L"Failed to initialize Pipeline", L"Critical Error!", MB_ICONERROR | MB_OK);
 		return E_FAIL;
 	}
 

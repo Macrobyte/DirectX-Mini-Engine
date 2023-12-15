@@ -20,8 +20,16 @@ private:
 	ID3D11DeviceContext* deviceContext;
 	ID3D11RenderTargetView* renderTargetView;
 
+	ID3D11VertexShader* vertexShader;
+	ID3D11PixelShader* pixelShader;
+	ID3D11InputLayout* inputLayout;
+
 	HRESULT InitializeDirectX(HWND hWnd);
 	void InitializeViewport();
+	HRESULT InitializePipeline();
+
+	HRESULT LoadVertexShader(LPCWSTR filename, ID3D11VertexShader** vertexShader, ID3D11InputLayout** inputLayout);
+	HRESULT LoadPixelShader(LPCWSTR filename, ID3D11PixelShader** pixelShader);
 
 public:
 	HRESULT Initialize(HWND hWnd);

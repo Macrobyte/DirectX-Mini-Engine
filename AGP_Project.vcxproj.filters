@@ -31,9 +31,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="packages.config" />
-  </ItemGroup>
-  <ItemGroup>
     <Filter Include="Engine">
       <UniqueIdentifier>{fd4656c8-b191-4f61-908e-b83fe8c468c0}</UniqueIdentifier>
     </Filter>
@@ -43,5 +40,8 @@
     <Filter Include="Engine\Rendering">
       <UniqueIdentifier>{991c4d81-985b-4e06-b5b4-8b1f17d8076b}</UniqueIdentifier>
     </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
 </Project>
