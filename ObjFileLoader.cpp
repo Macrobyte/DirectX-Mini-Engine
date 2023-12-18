@@ -1,11 +1,12 @@
 // turn off fopen warnings
 #define _CRT_SECURE_NO_WARNINGS
 
-#include "ObjFileModel.h"
+#include "ObjFileLoader.h"
 
+std::map<std::string, Obj*> ObjFileLoader::loadedModels;
 
 // draw object
-void ObjFileModel::Draw(void)
+void ObjFileLoader::Draw(void)
 {
 	UINT stride = sizeof(MODEL_POS_COL_TEX_NORM_VERTEX);
 	UINT offset = 0;
@@ -15,43 +16,45 @@ void ObjFileModel::Draw(void)
 
 
 // load object from obj file in constructor
-ObjFileModel::ObjFileModel(char* fname, ID3D11Device* device, ID3D11DeviceContext* context)
+ObjFileLoader::ObjFileLoader(char* fname, ID3D11Device* device, ID3D11DeviceContext* context)
 {
 	pD3DDevice = device;
 	pImmediateContext = context;
 
-	if(loadfile(fname)==0)
-	{
-		// file not loaded, check debug output;
-		filename="FILE NOT LOADED";
+	if (!LoadFile(fname))
 		return;
-	}
 
-	filename = fname;
-
-	parsefile();
+	ParseFile(fname);
 
 	createVB();
 
-	delete[] fbuffer; // delete file buffer created in loadfile()
+	delete[] fbuffer; // delete file buffer created in LoadFile()
 }
 
-ObjFileModel::ObjFileModel(char* filename, vector<xyz>& posListOut, vector<xyz>& normListOut, vector<xy>& texCoordListOut)
+ObjFileLoader::ObjFileLoader(char* filename, Obj& objOut)
 {
-	if (loadfile(filename) == 0)
-	{
-		// file not loaded, check debug output;
-		this->filename = "FILE NOT LOADED";
+	if (!LoadFile(filename))
 		return;
-	}
-	this->filename = filename;
-	parsefile();
 
-	posListOut = position_list;
-	normListOut = normal_list;
-	texCoordListOut = texcoord_list;
+	ParseFile(filename);
 
-	delete[] fbuffer; // delete file buffer created in loadfile()
+	Obj* loadedObj = new Obj();
+
+	loadedObj->texCoordList = texcoord_list;
+	loadedObj->normalList = normal_list;
+	loadedObj->positionList = position_list;
+
+	loadedObj->positionIndex = pIndex;
+	loadedObj->texCoordIndex = tIndex;
+	loadedObj->normalIndex = nIndex;
+
+	loadedModels[filename] = loadedObj;
+
+	objOut = *loadedObj;
+
+	delete loadedObj;
+
+	delete[] fbuffer; // delete file buffer created in LoadFile()
 }
 
 
@@ -59,36 +62,53 @@ ObjFileModel::ObjFileModel(char* filename, vector<xyz>& posListOut, vector<xyz>&
 // basic loader - only deals with vertices v, texcoords vt, normals vn 
 //              - only copes with triangular meshes (no quads)
 //              - doesn't deal with textures or materials
-int ObjFileModel::loadfile(char* fname)
+bool ObjFileLoader::LoadFile(char* fname)
 {
 	FILE* pFile;
 
 	pFile = fopen(fname , "r"); // if changed to bin format will read carriage return \r (0d) as well as \n (0a) into fbuffer, may need to add \r checks(but seemed to work with basic test)
-	if (pFile==NULL) { OutputDebugString(L"Failed to open model file"); OutputDebugStringA(fname); return 0 ;}
+	if (pFile==NULL) 
+	{
+		OutputDebugString(L"Failed to open model file");
+		OutputDebugStringA(fname);
+		return false ;
+	}
 
-	// get file size
+	// Get file size
 	fseek(pFile, 0, SEEK_END);
 	fbuffersize = ftell(pFile);
 	rewind(pFile);
 
-	// allocate memory for entire file size
+	// Allocate memory for entire file size
 	fbuffer  = new char[fbuffersize+1]; // 1 added to cope with adding a \n later in case file doesn't end with \n 
-	if (fbuffer == NULL) {fclose(pFile); OutputDebugString(L"Failed allocate memory for model file"); OutputDebugStringA(fname); return 0 ;}
+	if (fbuffer == NULL)
+	{
+		fclose(pFile);
+		OutputDebugString(L"Failed allocate memory for model file");
+		OutputDebugStringA(fname);
+		return false;
+	}
 
-	// copy file into memory
+	// Copy file into memory
 	actualsize = fread(fbuffer,1,fbuffersize,pFile); // actualsize may be less than fbuffersize in text mode as \r are stripped
-	if (actualsize == 0) {fclose(pFile); OutputDebugString(L"Failed to read model file"); OutputDebugStringA(fname); return 0 ;}
+	if (actualsize == 0)
+	{
+		fclose(pFile);
+		OutputDebugString(L"Failed to read model file");
+		OutputDebugStringA(fname);
+		return false;
+	}
 
-	// add a newline at end in case file does not, so can deal with whole buffer as a set of lines of text
+	// Add a newline at end in case file does not, so can deal with whole buffer as a set of lines of text
 	fbuffer[actualsize] = '\n'; fclose(pFile);
 
-	return 1;
+	return true;
 }
  
 
 // uses concept of getting parsable tokens seperated by whitespace and '/'
 // one line of file is parsed at a time, lines seperated by '\n'
-void ObjFileModel::parsefile()
+void ObjFileLoader::ParseFile(string filename)
 {
 	tokenptr=0; // token pointer points to first element of buffer
 
@@ -177,18 +197,18 @@ void ObjFileModel::parsefile()
 			{
 				// get vertex index
 				success = success && getnexttoken(tokenstart, tokenlength);
-				pindices.push_back(atoi(&fbuffer[tokenstart]));
+				pIndex.push_back(atoi(&fbuffer[tokenstart]));
 
 				if(forwardslashcount>=3&& adjacentslash==false) // get texcoord index if required 
 				{
 					success = success && getnexttoken(tokenstart, tokenlength);
-					tindices.push_back(atoi(&fbuffer[tokenstart]));
+					tIndex.push_back(atoi(&fbuffer[tokenstart]));
 				}
 
 				if(forwardslashcount==6 || adjacentslash==true) // get normal index if required 
 				{
 					success = success && getnexttoken(tokenstart, tokenlength);
-					nindices.push_back(atoi(&fbuffer[tokenstart]));
+					nIndex.push_back(atoi(&fbuffer[tokenstart]));
 				}
 			}
 
@@ -199,7 +219,7 @@ void ObjFileModel::parsefile()
 
 
 // get next token. if \n is next token do not proceed, use getnextline() to resume
-bool ObjFileModel::getnexttoken(int& tokenstart, int& tokenlength)
+bool ObjFileLoader::getnexttoken(int& tokenstart, int& tokenlength)
 {
 	tokenstart = tokenptr; 
 	tokenlength=1; 
@@ -222,7 +242,7 @@ bool ObjFileModel::getnexttoken(int& tokenstart, int& tokenlength)
 
 
 // gets next line of buffer by skipping to next element after end of current line, returns false when end of buffer exceeded
-bool ObjFileModel::getnextline()
+bool ObjFileLoader::getnextline()
 {
 	// relies on getnexttoken()leaving tokenptr pointing to \n if encountered
 
@@ -236,16 +256,16 @@ bool ObjFileModel::getnextline()
 
 
 // create Vertex buffer from parsed file data
-bool ObjFileModel::createVB()
+bool ObjFileLoader::createVB()
 {
 	// create vertex array to pass to vertex buffer from parsed data
-	numverts = pindices.size();
+	numverts = pIndex.size();
 
 	vertices = new MODEL_POS_COL_TEX_NORM_VERTEX[numverts]; // create big enough vertex array
 
 	for(unsigned int i = 0; i< numverts; i++)
 	{
-		int vindex = pindices[i]-1; // use -1 for indices as .obj files indices begin at 1
+		int vindex = pIndex[i]-1; // use -1 for indices as .obj files indices begin at 1
 
 		// set colour data
 		vertices[i].Col.x = 1;
@@ -258,18 +278,18 @@ bool ObjFileModel::createVB()
 		vertices[i].Pos.y = position_list[vindex].y;
 		vertices[i].Pos.z = position_list[vindex].z;
 
-		if(tindices.size() > 0)
+		if(tIndex.size() > 0)
 		{ 
 			// if there are any, set texture coord data
-			int tindex = tindices[i]-1;
+			int tindex = tIndex[i]-1;
 			vertices[i].TexCoord.x = texcoord_list[tindex].x;
 			vertices[i].TexCoord.y = texcoord_list[tindex].y;
 		}
 
-		if(nindices.size() > 0)
+		if(nIndex.size() > 0)
 		{
 			// if there are any, set normal data
-			int nindex = nindices[i]-1;
+			int nindex = nIndex[i]-1;
 			vertices[i].Normal.x = normal_list[nindex].x;
 			vertices[i].Normal.y = normal_list[nindex].y;
 			vertices[i].Normal.z = normal_list[nindex].z;
@@ -300,7 +320,7 @@ bool ObjFileModel::createVB()
 }
 
 
-ObjFileModel::~ObjFileModel()
+ObjFileLoader::~ObjFileLoader()
 {
 	// clean up memory used by object
 	if(pVertexBuffer) pVertexBuffer->Release();
@@ -310,4 +330,6 @@ ObjFileModel::~ObjFileModel()
 	position_list.clear();
 	normal_list.clear();
 	texcoord_list.clear();
+
+	//loadedModels.clear();
 }

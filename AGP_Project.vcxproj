@@ -137,19 +137,21 @@
   <ItemGroup>
     <ClCompile Include="Engine\Core\Time.cpp" />
     <ClCompile Include="Engine\Core\Window.cpp" />
+    <ClCompile Include="GameObject.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Mesh.cpp" />
     <ClCompile Include="ObjFactory.cpp" />
-    <ClCompile Include="ObjFileModel.cpp" />
+    <ClCompile Include="ObjFileLoader.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="Transform.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Engine\Core\Time.h" />
     <ClInclude Include="Engine\Core\Window.h" />
+    <ClInclude Include="GameObject.h" />
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="ObjFactory.h" />
-    <ClInclude Include="ObjFileModel.h" />
+    <ClInclude Include="ObjFileLoader.h" />
     <ClInclude Include="ReadData.h" />
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="Singleton.h" />

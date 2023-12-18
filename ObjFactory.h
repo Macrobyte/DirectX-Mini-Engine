@@ -1,9 +1,9 @@
 #pragma once
 #include <map>
 
-#include "ObjFileModel.h"
+#include "ObjFileLoader.h"
 
-//TODO - Figure out how to make this work. Do I make ObjFileModel just a file loader?
+//TODO - Figure out how to make this work. Do I make ObjFileLoader just a file loader?
 class ObjFactory
 {
 public:
@@ -12,7 +12,7 @@ public:
 	static Obj* Cube();
 
 private:
-	ObjFileModel* objToLoad;
+	ObjFileLoader* objToLoad;
 
 	static map<std::string, Obj*> models;
 

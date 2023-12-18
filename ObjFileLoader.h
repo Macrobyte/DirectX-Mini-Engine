@@ -5,6 +5,7 @@
 
 #include <d3d11.h>
 #include <DirectXMath.h>
+#include <map>
 #include <stdio.h>
 #include <string>
 #include <vector>
@@ -17,12 +18,16 @@ struct xy { float x, y; };		//used for texture coordinates during file parse
 
 struct Obj
 {
-	vector <xyz> position_list;		// list of parsed positions
-	vector <xyz> normal_list;		// list of parsed normals
-	vector <xy> texcoord_list;		// list of parsed texture coordinates
+	std::vector <xyz> positionList;		
+	std::vector <xyz> normalList;
+	std::vector <xy> texCoordList;		
+
+	std::vector <int> positionIndex;
+	std::vector <int> texCoordIndex;
+	std::vector <int> normalIndex;
 };
 
-class ObjFileModel
+class ObjFileLoader
 {
 private:
 	ID3D11Device*           pD3DDevice;
@@ -30,7 +35,7 @@ private:
 
 //////////////////////////////////////////////////
 
-	int loadfile(char* fname);
+	bool LoadFile(char* fname);
 
 	char* fbuffer;
 	long fbuffersize; // filesize
@@ -38,7 +43,7 @@ private:
 
 //////////////////////////////////////////////////
 
-	void parsefile();
+	void ParseFile(string filename);
 	bool getnextline() ;
 	bool getnexttoken(int& tokenstart, int& tokenlength);
 
@@ -51,10 +56,12 @@ private:
 	ID3D11Buffer* pVertexBuffer; 
 
 public:
-	ObjFileModel(char* filename, ID3D11Device* device, ID3D11DeviceContext* context);
-	ObjFileModel(char* filename, vector<xyz>& posListOut, vector<xyz>& normListOut, vector<xy>& texCoordListOut);
-	~ObjFileModel();
+	ObjFileLoader(char* filename, ID3D11Device* device, ID3D11DeviceContext* context);
+	ObjFileLoader(char* filename, Obj& objOut);
+	~ObjFileLoader();
 
+	// Map of loaded models
+	static map<std::string, Obj*> loadedModels;
 
 	// Define model vertex structure
 	struct MODEL_POS_COL_TEX_NORM_VERTEX
@@ -65,13 +72,16 @@ public:
 		XMFLOAT3 Normal;
 	};
 
-	string filename;
+	//string filename;
 
 	vector <xyz> position_list;		// list of parsed positions
 	vector <xyz> normal_list;		// list of parsed normals
 	vector <xy> texcoord_list;		// list of parsed texture coordinates
 
-	vector <int> pindices, tindices, nindices; // lists of indicies into above lists derived from faces
+	// Lists of indices into above lists derived from faces
+	vector <int> pIndex; 
+	vector <int> tIndex;
+	vector <int> nIndex;
 
 	MODEL_POS_COL_TEX_NORM_VERTEX* vertices;
 	unsigned int numverts;

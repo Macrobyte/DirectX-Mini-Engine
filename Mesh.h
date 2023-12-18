@@ -1,9 +1,8 @@
 #pragma once
 #include <d3d11.h>
 #include <DirectXMath.h>
-#include <vector>
 
-#include "ObjFileModel.h"
+#include "ObjFileLoader.h"
 
 struct Vertex
 {
@@ -24,12 +23,12 @@ public:
 
 private:
 
-	Obj* objFileModel;
+	Obj* objRef;
 
 	ID3D11Device* D3DDevice;
 	ID3D11DeviceContext* immediateDeviceContext;
 
-	std::vector<Vertex> vertices;
+	Vertex* vertices;
 	unsigned int vertexCount;
 
 	ID3D11Buffer* vertexBuffer;

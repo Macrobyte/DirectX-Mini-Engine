@@ -18,14 +18,17 @@
     <ClCompile Include="Renderer.cpp">
       <Filter>Engine\Rendering</Filter>
     </ClCompile>
-    <ClCompile Include="ObjFileModel.cpp">
+    <ClCompile Include="ObjFileLoader.cpp">
       <Filter>Engine\Utility</Filter>
     </ClCompile>
     <ClCompile Include="Transform.cpp">
       <Filter>Engine\Game Object Components</Filter>
     </ClCompile>
-    <ClCompile Include="Mesh.cpp" />
     <ClCompile Include="ObjFactory.cpp" />
+    <ClCompile Include="Mesh.cpp">
+      <Filter>Engine\Game Object Components</Filter>
+    </ClCompile>
+    <ClCompile Include="GameObject.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Engine\Core\Window.h">
@@ -37,7 +40,7 @@
     <ClInclude Include="Renderer.h">
       <Filter>Engine\Rendering</Filter>
     </ClInclude>
-    <ClInclude Include="ObjFileModel.h">
+    <ClInclude Include="ObjFileLoader.h">
       <Filter>Engine\Utility</Filter>
     </ClInclude>
     <ClInclude Include="ReadData.h">
@@ -49,8 +52,11 @@
     <ClInclude Include="Transform.h">
       <Filter>Engine\Game Object Components</Filter>
     </ClInclude>
-    <ClInclude Include="Mesh.h" />
     <ClInclude Include="ObjFactory.h" />
+    <ClInclude Include="Mesh.h">
+      <Filter>Engine\Game Object Components</Filter>
+    </ClInclude>
+    <ClInclude Include="GameObject.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Engine">
@@ -67,6 +73,9 @@
     </Filter>
     <Filter Include="Engine\Game Object Components">
       <UniqueIdentifier>{f525d17a-f16e-4c67-a2da-e7917555572d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Engine\Core\Game Objects">
+      <UniqueIdentifier>{7fe2ae72-a1af-4b2b-a2e0-18739de6429b}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

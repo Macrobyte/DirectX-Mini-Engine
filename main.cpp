@@ -18,7 +18,7 @@
 #include <Mouse.h>
 #include <Keyboard.h>
 
-#include "ObjFileModel.h"
+#include "ObjFileLoader.h"
 
 #include <SpriteFont.h>
 
@@ -156,7 +156,7 @@ XMVECTOR directionalLightShinesFrom = { 0.2788f, 0.7063f, 0.6506f };
 XMVECTOR directionalLightColour = { 0.96f, 0.8f, 0.75f, 1.0f };
 PointLight pointLights[MAX_POINT_LIGHTS];
 
-ObjFileModel* model;
+ObjFileLoader* model;
 
 ID3D11RasterizerState* pRasterSolid = NULL;
 ID3D11RasterizerState* pRasterSkybox = NULL;
@@ -202,6 +202,17 @@ int WINAPI WinMain(
 	_In_ int nCmdShow) // How the window is to be shown (e.g. maximized, minimized, etc.
 {
 	OpenConsole();
+
+	Obj* cubeTest = ObjFactory::Cube();
+
+	for(auto& p : cubeTest->positionList)
+	{
+		std::cout << p.x << " " << p.y << " " << p.z << std::endl;
+	}
+
+	std::cout << "Number of vertices: " << cubeTest->positionList.size() << std::endl;
+
+	std::cout << "Number of objs: " << ObjFileLoader::loadedModels.size() << std::endl;
 
 	std::cout << "Hello World!" << std::endl;
 
@@ -575,7 +586,7 @@ void InitGraphics()
 	spriteBatch = std::make_unique<SpriteBatch>(g_devcon);
 	spriteFont = std::make_unique<SpriteFont>(g_pDevice, L"comicsans.spritefont");
 
-	model = new ObjFileModel{ const_cast<char*>("Models/cube.obj"),g_pDevice,g_devcon };
+	model = new ObjFileLoader{ const_cast<char*>("Models/cube.obj"),g_pDevice,g_devcon };
 	
 	CreateDDSTextureFromFile(g_pDevice, g_devcon, L"Skybox.dds", NULL, &pSkyboxTexture);
 
