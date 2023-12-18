@@ -9,26 +9,48 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="objfilemodel.cpp" />
     <ClCompile Include="Engine\Core\Window.cpp">
       <Filter>Engine\Core</Filter>
     </ClCompile>
-    <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="Engine\Core\Time.cpp">
       <Filter>Engine\Core</Filter>
     </ClCompile>
+    <ClCompile Include="Renderer.cpp">
+      <Filter>Engine\Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="ObjFileModel.cpp">
+      <Filter>Engine\Utility</Filter>
+    </ClCompile>
+    <ClCompile Include="Transform.cpp">
+      <Filter>Engine\Game Object Components</Filter>
+    </ClCompile>
+    <ClCompile Include="Mesh.cpp" />
+    <ClCompile Include="ObjFactory.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="objfilemodel.h" />
-    <ClInclude Include="ReadData.h" />
     <ClInclude Include="Engine\Core\Window.h">
       <Filter>Engine\Core</Filter>
     </ClInclude>
-    <ClInclude Include="Singleton.h" />
-    <ClInclude Include="Renderer.h" />
     <ClInclude Include="Engine\Core\Time.h">
       <Filter>Engine\Core</Filter>
     </ClInclude>
+    <ClInclude Include="Renderer.h">
+      <Filter>Engine\Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="ObjFileModel.h">
+      <Filter>Engine\Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="ReadData.h">
+      <Filter>Engine\Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="Singleton.h">
+      <Filter>Engine\Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="Transform.h">
+      <Filter>Engine\Game Object Components</Filter>
+    </ClInclude>
+    <ClInclude Include="Mesh.h" />
+    <ClInclude Include="ObjFactory.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Engine">
@@ -39,6 +61,12 @@
     </Filter>
     <Filter Include="Engine\Rendering">
       <UniqueIdentifier>{991c4d81-985b-4e06-b5b4-8b1f17d8076b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Engine\Utility">
+      <UniqueIdentifier>{bbeffb4c-0bc8-4e99-917a-fc5f08e7df14}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Engine\Game Object Components">
+      <UniqueIdentifier>{f525d17a-f16e-4c67-a2da-e7917555572d}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

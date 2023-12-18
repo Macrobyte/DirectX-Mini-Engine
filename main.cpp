@@ -18,10 +18,11 @@
 #include <Mouse.h>
 #include <Keyboard.h>
 
-#include "objfilemodel.h"
+#include "ObjFileModel.h"
 
 #include <SpriteFont.h>
 
+#include "ObjFactory.h"
 #include "Renderer.h"
 
 using namespace DirectX;
@@ -56,7 +57,7 @@ struct Vertex
 };
 
 ID3D11Buffer* pVBuffer = NULL; // Vertex
-ID3D11Buffer* pIBuffer = NULL; // Index
+//ID3D11Buffer* pIBuffer = NULL; // Index
 ID3D11Buffer* pCBuffer = NULL; // Constant
 
 struct PointLight
@@ -201,6 +202,8 @@ int WINAPI WinMain(
 	_In_ int nCmdShow) // How the window is to be shown (e.g. maximized, minimized, etc.
 {
 	OpenConsole();
+
+	std::cout << "Hello World!" << std::endl;
 
 	if (FAILED(Window::Initialize(WindowProc, hInstance, nCmdShow, L"Game", 1280, 720)))
 	{
@@ -474,7 +477,7 @@ HRESULT InitD3D(HWND hWnd)
 	dsDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
 	g_pDevice->CreateDepthStencilState(&dsDesc, &pDepthWriteSkybox);
 
-	g_devcon->RSSetState(pRasterizerState);
+	g_devcon->RSSetState(pRasterSolid);
 
 	return S_OK;
 
@@ -572,10 +575,11 @@ void InitGraphics()
 	spriteBatch = std::make_unique<SpriteBatch>(g_devcon);
 	spriteFont = std::make_unique<SpriteFont>(g_pDevice, L"comicsans.spritefont");
 
-	model = new ObjFileModel{ (char*)"Models/cube.obj",g_pDevice,g_devcon };
+	model = new ObjFileModel{ const_cast<char*>("Models/cube.obj"),g_pDevice,g_devcon };
 	
-	CreateDDSTextureFromFile(g_pDevice, g_devcon, L"skybox01.dds", NULL, &pSkyboxTexture);
-	
+	CreateDDSTextureFromFile(g_pDevice, g_devcon, L"Skybox.dds", NULL, &pSkyboxTexture);
+
+#pragma region Old Code Index rendering and such
 	//Vertex vertices[] =
 	//{
 	//	{XMFLOAT3{-0.5f, -0.5f, -0.5f}, XMFLOAT4{Colors::MediumVioletRed}, XMFLOAT2{0.0f, 1.0f}, XMFLOAT3{-0.5773f, -0.5773f, -0.5773f}},  // Front BL
@@ -592,13 +596,13 @@ void InitGraphics()
 
 	//pText = new Text2D("Textures/font1.png", g_pDevice, g_devcon);
 
-	// Create the vertex buffer
+	//Create the vertex buffer
 	//D3D11_BUFFER_DESC bd = { 0 };
 	//bd.Usage = D3D11_USAGE_DYNAMIC;
 	//bd.ByteWidth = sizeof(vertices);
 	//bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 	//bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-	//
+	
 	//g_pDevice->CreateBuffer(&bd, NULL, &g_pVertexBuffer);
 	//if (g_pVertexBuffer == 0)
 	//{
@@ -606,7 +610,7 @@ void InitGraphics()
 	//	return;
 	//}
 
-	//// Copy the vertices into the buffer
+	// Copy the vertices into the buffer
 	//D3D11_MAPPED_SUBRESOURCE ms;
 	//g_devcon->Map(g_pVertexBuffer, NULL, D3D11_MAP_WRITE_DISCARD, NULL, &ms); // Map the buffer
 
@@ -615,13 +619,13 @@ void InitGraphics()
 	//g_devcon->Unmap(g_pVertexBuffer, NULL); // Unmap the buffer
 
 
-	unsigned int indices[] = { 0, 1, 2, 2, 3, 0, // Front face
-							   7, 6, 5, 5, 4, 7, // Back face
-							   4, 5, 1, 1, 0, 4, // Left face
-							   3, 2, 6, 6, 7, 3, // Right face
-                               1, 5, 6, 6, 2, 1, // Top face.
-							   4, 0, 3, 3, 7, 4 }; // Bottom face
-							   
+	//unsigned int indices[] = { 0, 1, 2, 2, 3, 0, // Front face
+	//						   7, 6, 5, 5, 4, 7, // Back face
+	//						   4, 5, 1, 1, 0, 4, // Left face
+	//						   3, 2, 6, 6, 7, 3, // Right face
+ //                              1, 5, 6, 6, 2, 1, // Top face.
+	//						   4, 0, 3, 3, 7, 4 }; // Bottom face
+	//						   
 
 	//// Fill in a buffer description.
 	//D3D11_BUFFER_DESC bufferDesc = { 0 };
@@ -635,7 +639,7 @@ void InitGraphics()
 
 	//if (FAILED(g_pDevice->CreateBuffer(&bufferDesc, &InitData, &pIBuffer)))
 	//	OutputDebugString(L"Failed to create index buffer\n");
-
+#pragma  endregion
 
 	D3D11_BUFFER_DESC cbd = { 0 };
 	cbd.Usage = D3D11_USAGE_DEFAULT;
@@ -681,11 +685,7 @@ void RenderFrame()
 
 	DrawSkybox();
 
-	// Select which vertex buffer, index buffer and primtive topology to use - PER MESH!!
-	UINT stride = sizeof(Vertex);
-	UINT offset = 0;
-	g_devcon->IASetVertexBuffers(0, 1, &g_pVertexBuffer, &stride, &offset);
-	g_devcon->IASetIndexBuffer(pIBuffer, DXGI_FORMAT_R32_UINT, 0);
+
 	g_devcon->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST); 	// Select which primitive we are using
 
 	// View and projection matrices
@@ -738,15 +738,15 @@ void RenderFrame()
 
 	model->Draw();
 
-	spriteBatch->Begin();
-	spriteFont->DrawString(spriteBatch.get(), L"LETS GO COMIC SANSSS", XMFLOAT2(0, 0), Colors::Red, 0.0f, XMFLOAT2(0, 0), 2.0f);
-	spriteBatch->End();
 
-	g_devcon->OMSetBlendState(pAlphaBlendDisable, NULL, 0xffffffff);
+	//spriteBatch->Begin();
+	//spriteFont->DrawString(spriteBatch.get(), L"LETS GO COMIC SANSSS", XMFLOAT2(0, 0), Colors::Red, 0.0f, XMFLOAT2(0, 0), 2.0f);
+	//spriteBatch->End();
 
 	
 
 
+	g_devcon->OMSetBlendState(pAlphaBlendDisable, NULL, 0xffffffff);
 
 
 	// Flip the back and front buffers around. Display on screen

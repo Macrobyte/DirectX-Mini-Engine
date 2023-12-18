@@ -136,7 +136,7 @@ HRESULT Renderer::InitializeDirectX(HWND hWnd)
 	dsDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
 	device->CreateDepthStencilState(&dsDesc, &depthWriteSkybox);
 
-	deviceContext->RSSetState(rasterState);
+	deviceContext->RSSetState(rasterSolid);
 #pragma endregion
 
 	std::cout << "DirectX initialized" << std::endl;
@@ -184,8 +184,6 @@ HRESULT Renderer::InitializePipeline()
 		OutputDebugString(L"Failed to load pixel shader\n");
 		return E_FAIL;
 	}
-
-
 
 	return S_OK;
 }
@@ -307,6 +305,14 @@ void Renderer::Render()
 {
 	deviceContext->ClearRenderTargetView(renderTargetView, DirectX::Colors::CornflowerBlue);
 
+	deviceContext->ClearDepthStencilView(zBuffer, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+
+	deviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+	// Objects to render go here
+
+
+	deviceContext->OMSetBlendState(alphaBlend, nullptr, 0xffffffff);
 
 	swapChain->Present(0, 0);
 }

@@ -24,10 +24,11 @@ private:
 	ID3D11BlendState* alphaBlend;
 
 	ID3D11RasterizerState* rasterSolid;
-	ID3D11RasterizerState* rasterSkybox;
 	ID3D11DepthStencilState* depthWriteSolid;
-	ID3D11DepthStencilState* depthWriteSkybox;
 	ID3D11RasterizerState* rasterState;
+
+	ID3D11RasterizerState* rasterSkybox;
+	ID3D11DepthStencilState* depthWriteSkybox;
 
 	ID3D11VertexShader* vertexShader;
 	ID3D11PixelShader* pixelShader;

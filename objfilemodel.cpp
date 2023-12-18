@@ -36,6 +36,24 @@ ObjFileModel::ObjFileModel(char* fname, ID3D11Device* device, ID3D11DeviceContex
 	delete[] fbuffer; // delete file buffer created in loadfile()
 }
 
+ObjFileModel::ObjFileModel(char* filename, vector<xyz>& posListOut, vector<xyz>& normListOut, vector<xy>& texCoordListOut)
+{
+	if (loadfile(filename) == 0)
+	{
+		// file not loaded, check debug output;
+		this->filename = "FILE NOT LOADED";
+		return;
+	}
+	this->filename = filename;
+	parsefile();
+
+	posListOut = position_list;
+	normListOut = normal_list;
+	texCoordListOut = texcoord_list;
+
+	delete[] fbuffer; // delete file buffer created in loadfile()
+}
+
 
 // load wavefront object file. adds terminating \n so last line of file can be correctly parsed as a 'line' later
 // basic loader - only deals with vertices v, texcoords vt, normals vn 
