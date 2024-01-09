@@ -16,7 +16,7 @@ struct Vertex
 class Mesh
 {
 public:
-	Mesh();
+	Mesh(Obj* obj, ID3D11Device* dev, ID3D11DeviceContext* devCon);
 	~Mesh();
 
 	void Draw();
@@ -34,5 +34,6 @@ private:
 	ID3D11Buffer* vertexBuffer;
 	
 	bool CreateVertexBuffer();
+	void SetObj(Obj* obj) { objRef = obj; }
 };
 

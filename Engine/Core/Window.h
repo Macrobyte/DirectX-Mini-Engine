@@ -9,6 +9,7 @@ public:
 	static HRESULT Initialize(WNDPROC winProc, HINSTANCE instance , int cmdShow, const wchar_t* windowName, int windowWidth, int windowHeight);
 
 	static HWND GetWindowHandle() { return hWnd; }
+	static LRESULT CALLBACK WindowProc(HWND, UINT, WPARAM, LPARAM);
 
 	static int GetWindowWidth() { return winWidth; }
 	static int GetWindowHeight() { return winHeight; }

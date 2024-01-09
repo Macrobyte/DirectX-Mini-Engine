@@ -1,9 +1,19 @@
 #pragma once
 #include <d3d11.h>
-
+#include <DirectXMath.h>
 #include "Singleton.h"
+#include <vector>
+#include <string>
+#include <SpriteFont.h>
+#include "TypeHelpers.h"
+
+#define MAX_POINT_LIGHTS 4
+
+
 
 class Window;
+class GameObject;
+class Skybox;
 
 class Renderer : public Singleton<Renderer>
 {
@@ -15,41 +25,51 @@ public:
 
 private:
 
-	ID3D11Device* device;
-	ID3D11DeviceContext* deviceContext;
+	ID3D11Device* device = nullptr;
+	ID3D11DeviceContext* deviceContext = nullptr;
 
-	IDXGISwapChain* swapChain;
-	ID3D11RenderTargetView* renderTargetView;
-	ID3D11DepthStencilView* zBuffer;
-	ID3D11BlendState* alphaBlend;
+	IDXGISwapChain* swapChain = nullptr;
+	ID3D11RenderTargetView* renderTargetView = nullptr;
+	ID3D11DepthStencilView* zBuffer = nullptr;
+	ID3D11BlendState* alphaBlend = nullptr;
 
-	ID3D11RasterizerState* rasterSolid;
-	ID3D11DepthStencilState* depthWriteSolid;
-	ID3D11RasterizerState* rasterState;
+	DirectX::XMMATRIX worldMatrix, viewMatrix, projectionMatrix;
 
-	ID3D11RasterizerState* rasterSkybox;
-	ID3D11DepthStencilState* depthWriteSkybox;
+	bool isFullscreen = false;
 
-	ID3D11VertexShader* vertexShader;
-	ID3D11PixelShader* pixelShader;
-	ID3D11InputLayout* inputLayout;
+	Skybox* skybox = nullptr;
+
+	// Text rendering
+	std::unique_ptr<DirectX::SpriteFont> font;
+	std::vector<std::unique_ptr<DirectX::SpriteFont>> fonts;
+	std::unique_ptr<DirectX::SpriteBatch> spriteBatch;
+
+	void InitializeTextRendering();
+	void LoadFont(std::wstring filePath);
+	void RenderUI();
+
 
 	HRESULT InitializeDirectX(HWND hWnd);
 	void InitializeViewport();
-	HRESULT InitializePipeline();
-
-	HRESULT LoadVertexShader(LPCWSTR filename, ID3D11VertexShader** vertexShader, ID3D11InputLayout** inputLayout);
-	HRESULT LoadPixelShader(LPCWSTR filename, ID3D11PixelShader** pixelShader);
 
 public:
 	HRESULT Initialize(HWND hWnd);
+	void Render();
 	void Release();
 
-	void Render();
 
+	HRESULT LoadVertexShader(LPCWSTR filename, ID3D11VertexShader** vertexShader, ID3D11InputLayout** inputLayout);
+	HRESULT LoadPixelShader(LPCWSTR filename, ID3D11PixelShader** pixelShader);
 #pragma region Getters
 	ID3D11Device* GetDevice() { return device; }
 	ID3D11DeviceContext* GetDeviceContext() { return deviceContext; }
+	Skybox* GetSkybox() { return skybox; }
 #pragma endregion
+
+#pragma region Setters
+	void SetSkybox(Skybox* skybox) { this->skybox = skybox; }
+#pragma endregion
+
+	void ToggleFullscreen();
 };
 

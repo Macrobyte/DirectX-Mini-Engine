@@ -1,4 +1,23 @@
 #include "Mesh.h"
+#include <iostream>
+
+Mesh::Mesh(Obj* obj, ID3D11Device* dev, ID3D11DeviceContext* devCon)
+{
+	SetObj(obj);
+
+	D3DDevice = dev;
+
+	immediateDeviceContext = devCon;
+
+	CreateVertexBuffer();
+}
+
+Mesh::~Mesh()
+{
+	if (vertexBuffer) vertexBuffer->Release();
+	delete [] vertices;
+	std::cout << "Mesh deleted" << std::endl;
+}
 
 void Mesh::Draw()
 {

@@ -1,28 +1,39 @@
 #pragma once
 #include <DirectXMath.h>
+#include "SimpleMath.h"
+#include "TypeHelpers.h"
 
 class Transform
 {
+private:
+	Vector3 position;
+	Vector3 scale;
+	Quaternion rotation;
+
 public:
 	Transform();
 	~Transform() = default;
 
-	// Getters
-	DirectX::XMFLOAT3 GetPosition() { return position; }
-	DirectX::XMFLOAT3 GetRotation() { return rotation; }
-	DirectX::XMFLOAT3 GetScale() { return scale; }
+	Vector3& GetPosition() { return position; }
+	Quaternion& GetRotation() { return rotation; }
+	Vector3& GetScale() { return scale; }
 
-	void SetPosition(float x, float y, float z) { position = DirectX::XMFLOAT3(x, y, z); }
-	void SetRotation(float x, float y, float z) { rotation = DirectX::XMFLOAT3(x, y, z); }
-	void SetScale(float x, float y, float z) { scale = DirectX::XMFLOAT3(x, y, z); }
+	void SetPosition(const float& x, const float& y, const float& z) { position = Vector3(x, y, z); }
+	void SetPosition(const Vector3& pos) { position = pos; }
+	void SetRotation(const float& x, const float& y, const float& z) { rotation = Quaternion::CreateFromYawPitchRoll(y, x, z); }
+	void SetRotation(const Quaternion& rot) { rotation = rot; }
+	void SetScale(const float& x, const float& y, const float& z) { scale = Vector3(x, y, z); }
+	void SetScale(const Vector3& scale) { this->scale = scale; }
 
 
-	//TODO - Uncomment when other classes are done
-	//DirectX::XMMATRIX GetWorldMatrix();
+	Matrix GetWorldMatrix();
 
-private:
-	DirectX::XMFLOAT3 position;
-	DirectX::XMFLOAT3 rotation;
-	DirectX::XMFLOAT3 scale;
+	Vector3 GetForwardVector();
+	Vector3 GetRightVector();
+	Vector3 GetUpVector();
+
+	void Translate(Vector3 translation);
+
+
 };
 

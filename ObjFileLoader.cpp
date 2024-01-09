@@ -3,34 +3,6 @@
 
 #include "ObjFileLoader.h"
 
-std::map<std::string, Obj*> ObjFileLoader::loadedModels;
-
-// draw object
-void ObjFileLoader::Draw(void)
-{
-	UINT stride = sizeof(MODEL_POS_COL_TEX_NORM_VERTEX);
-	UINT offset = 0;
-	pImmediateContext->IASetVertexBuffers(0, 1, &pVertexBuffer, &stride, &offset);
-	pImmediateContext->Draw(numverts, 0);
-}
-
-
-// load object from obj file in constructor
-ObjFileLoader::ObjFileLoader(char* fname, ID3D11Device* device, ID3D11DeviceContext* context)
-{
-	pD3DDevice = device;
-	pImmediateContext = context;
-
-	if (!LoadFile(fname))
-		return;
-
-	ParseFile(fname);
-
-	createVB();
-
-	delete[] fbuffer; // delete file buffer created in LoadFile()
-}
-
 ObjFileLoader::ObjFileLoader(char* filename, Obj& objOut)
 {
 	if (!LoadFile(filename))
@@ -47,8 +19,6 @@ ObjFileLoader::ObjFileLoader(char* filename, Obj& objOut)
 	loadedObj->positionIndex = pIndex;
 	loadedObj->texCoordIndex = tIndex;
 	loadedObj->normalIndex = nIndex;
-
-	loadedModels[filename] = loadedObj;
 
 	objOut = *loadedObj;
 
@@ -255,76 +225,10 @@ bool ObjFileLoader::getnextline()
 }
 
 
-// create Vertex buffer from parsed file data
-bool ObjFileLoader::createVB()
-{
-	// create vertex array to pass to vertex buffer from parsed data
-	numverts = pIndex.size();
-
-	vertices = new MODEL_POS_COL_TEX_NORM_VERTEX[numverts]; // create big enough vertex array
-
-	for(unsigned int i = 0; i< numverts; i++)
-	{
-		int vindex = pIndex[i]-1; // use -1 for indices as .obj files indices begin at 1
-
-		// set colour data
-		vertices[i].Col.x = 1;
-		vertices[i].Col.y = 1;
-		vertices[i].Col.z = 1;
-		vertices[i].Col.w = 1;
-
-		// set position data
-		vertices[i].Pos.x = position_list[vindex].x;
-		vertices[i].Pos.y = position_list[vindex].y;
-		vertices[i].Pos.z = position_list[vindex].z;
-
-		if(tIndex.size() > 0)
-		{ 
-			// if there are any, set texture coord data
-			int tindex = tIndex[i]-1;
-			vertices[i].TexCoord.x = texcoord_list[tindex].x;
-			vertices[i].TexCoord.y = texcoord_list[tindex].y;
-		}
-
-		if(nIndex.size() > 0)
-		{
-			// if there are any, set normal data
-			int nindex = nIndex[i]-1;
-			vertices[i].Normal.x = normal_list[nindex].x;
-			vertices[i].Normal.y = normal_list[nindex].y;
-			vertices[i].Normal.z = normal_list[nindex].z;
-		}
-	}
-
-	// Set up and create vertex buffer
-	D3D11_BUFFER_DESC bufferDesc;
-	ZeroMemory(&bufferDesc, sizeof(bufferDesc));
-	bufferDesc.Usage = D3D11_USAGE_DYNAMIC;										// Used by CPU and GPU
-	bufferDesc.ByteWidth = sizeof(vertices[0])*numverts;						// Total size of buffer
-	bufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;							// Use as a vertex buffer
-	bufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;							// Allow CPU access
-	HRESULT hr = pD3DDevice->CreateBuffer(&bufferDesc, NULL, &pVertexBuffer);	// Create the buffer
-
-	if(FAILED(hr))
-    {
-        return false;
-    }
-
-	// Copy the vertices into the buffer
-	D3D11_MAPPED_SUBRESOURCE ms;
-	pImmediateContext->Map(pVertexBuffer, NULL, D3D11_MAP_WRITE_DISCARD, NULL, &ms);	// Lock the buffer to allow writing
-	memcpy(ms.pData, vertices, sizeof(vertices[0])*numverts);							// Copy the data
-	pImmediateContext->Unmap(pVertexBuffer, NULL);										// Unlock the buffer
-
-	return true;
-}
 
 
 ObjFileLoader::~ObjFileLoader()
 {
-	// clean up memory used by object
-	if(pVertexBuffer) pVertexBuffer->Release();
-
 	delete [] vertices;
 
 	position_list.clear();

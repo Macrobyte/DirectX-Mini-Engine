@@ -1,4 +1,6 @@
 #include "Window.h"
+#include "../../InputHandler.h"
+#include "../../Renderer.h"
 
 HINSTANCE Window::hInstance = NULL;
 HWND Window::hWnd = NULL;
@@ -38,8 +40,8 @@ HRESULT Window::Initialize(WNDPROC winProc, HINSTANCE instance, int cmdShow, con
 		windowName, // Title of the window
 		WS_OVERLAPPED | WS_MINIMIZEBOX | WS_SYSMENU,
 		//WS_OVERLAPPDWINDOW, //Alternative windo style that allows resizing
-		100,// x-position of the window
-		100, // y-position of the window
+		0,// x-position of the window
+		0, // y-position of the window
 		wr.right - wr.left, // Width of the window
 		wr.bottom - wr.top, // Height of the window
 		NULL, // No parent window, null
@@ -55,3 +57,64 @@ HRESULT Window::Initialize(WNDPROC winProc, HINSTANCE instance, int cmdShow, con
 
 	return S_OK;
 }
+
+LRESULT Window::WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+	switch (message)
+	{
+
+	case WM_DESTROY: // This message is sent when the user closes the window
+		PostQuitMessage(0);
+		return 0;
+		break;
+
+	case WM_ACTIVATE:
+	case WM_ACTIVATEAPP:
+	case WM_INPUT:
+		InputHandler::GetInstance().GetKeyboard()->ProcessMessage(message, wParam, lParam);
+		InputHandler::GetInstance().GetMouse()->ProcessMessage(message, wParam, lParam);
+		break;
+
+	case WM_SYSKEYDOWN:
+		if (wParam == VK_RETURN && (lParam & 0x60000000) == 0x20000000)
+		{
+			Renderer::GetInstance().ToggleFullscreen();
+				
+		}
+		InputHandler::GetInstance().GetKeyboard()->ProcessMessage(message, wParam, lParam);
+		break;
+
+	case WM_KEYDOWN:
+	case WM_KEYUP:
+	case WM_SYSKEYUP:
+		InputHandler::GetInstance().GetKeyboard()->ProcessMessage(message, wParam, lParam);
+		break;
+
+
+	case WM_MOUSEACTIVATE:
+		return MA_ACTIVATEANDEAT; // This will ignore mouse clicks that regain focus on the window
+		break;
+
+	case WM_MOUSEMOVE:
+	case WM_LBUTTONDOWN:
+	case WM_LBUTTONUP:
+	case WM_RBUTTONDOWN:
+	case WM_RBUTTONUP:
+	case WM_MBUTTONDOWN:
+	case WM_MBUTTONUP:
+	case WM_MOUSEWHEEL:
+		InputHandler::GetInstance().GetMouse()->ProcessMessage(message, wParam, lParam);
+	case WM_XBUTTONDOWN:
+	case WM_XBUTTONUP:
+	case WM_MOUSEHOVER:
+		InputHandler::GetInstance().GetMouse()->ProcessMessage(message, wParam, lParam);
+		break;
+
+	default:
+		return DefWindowProc(hWnd, message, wParam, lParam);
+		break;
+	}
+
+	return 0;
+}
+

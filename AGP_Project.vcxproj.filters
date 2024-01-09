@@ -1,18 +1,28 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <FxCompile Include="PixelShader.hlsl" />
-    <FxCompile Include="SkyboxPShader.hlsl" />
-    <FxCompile Include="SkyboxVShader.hlsl" />
-    <FxCompile Include="text2D_shaders.hlsl" />
-    <FxCompile Include="VertexShader.hlsl" />
+    <FxCompile Include="VertexShader.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="SkyboxVShader.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="SkyboxPShader.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="ReflectiveVShader.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="ReflectivePShader.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="PixelShader.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Engine\Core\Window.cpp">
-      <Filter>Engine\Core</Filter>
-    </ClCompile>
-    <ClCompile Include="Engine\Core\Time.cpp">
       <Filter>Engine\Core</Filter>
     </ClCompile>
     <ClCompile Include="Renderer.cpp">
@@ -22,19 +32,86 @@
       <Filter>Engine\Utility</Filter>
     </ClCompile>
     <ClCompile Include="Transform.cpp">
-      <Filter>Engine\Game Object Components</Filter>
+      <Filter>Engine\Game Objects\Game Object Components</Filter>
     </ClCompile>
-    <ClCompile Include="ObjFactory.cpp" />
     <ClCompile Include="Mesh.cpp">
-      <Filter>Engine\Game Object Components</Filter>
+      <Filter>Engine\Game Objects\Game Object Components</Filter>
     </ClCompile>
-    <ClCompile Include="GameObject.cpp" />
+    <ClCompile Include="Material.cpp">
+      <Filter>Engine\Game Objects\Game Object Components</Filter>
+    </ClCompile>
+    <ClCompile Include="GameObject.cpp">
+      <Filter>Engine\Game Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="ObjLibrary.cpp">
+      <Filter>Engine\Helper Libraries</Filter>
+    </ClCompile>
+    <ClCompile Include="Camera.cpp">
+      <Filter>Engine\Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="DirectionalLight.cpp">
+      <Filter>Engine\Rendering\Lights</Filter>
+    </ClCompile>
+    <ClCompile Include="Light.cpp">
+      <Filter>Engine\Rendering\Lights</Filter>
+    </ClCompile>
+    <ClCompile Include="PointLight.cpp">
+      <Filter>Engine\Rendering\Lights</Filter>
+    </ClCompile>
+    <ClCompile Include="MaterialLibrary.cpp">
+      <Filter>Engine\Helper Libraries</Filter>
+    </ClCompile>
+    <ClCompile Include="Text.cpp">
+      <Filter>Engine\Rendering\Text</Filter>
+    </ClCompile>
+    <ClCompile Include="InputHandler.cpp">
+      <Filter>Engine\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="MeshLibrary.cpp">
+      <Filter>Engine\Helper Libraries</Filter>
+    </ClCompile>
+    <ClCompile Include="BoundingBox.cpp">
+      <Filter>Engine\Game Objects\Game Object Components</Filter>
+    </ClCompile>
+    <ClCompile Include="Bullet.cpp">
+      <Filter>Engine\Game Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="TargetBox.cpp">
+      <Filter>Engine\Game Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="Player.cpp">
+      <Filter>Engine\Game Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="CollisionHandler.cpp">
+      <Filter>Engine\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="UIPanel.cpp">
+      <Filter>Engine\Core\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="UI.cpp">
+      <Filter>Engine\Core\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="World.cpp">
+      <Filter>Engine\Core\Game</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Core\Time.cpp">
+      <Filter>Engine\Core\Game</Filter>
+    </ClCompile>
+    <ClCompile Include="Game.cpp">
+      <Filter>Engine\Core\Game</Filter>
+    </ClCompile>
+    <ClCompile Include="Skybox.cpp">
+      <Filter>Engine\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Collectible.cpp">
+      <Filter>Engine\Game Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="SoundHandler.cpp">
+      <Filter>Engine\Core</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Engine\Core\Window.h">
-      <Filter>Engine\Core</Filter>
-    </ClInclude>
-    <ClInclude Include="Engine\Core\Time.h">
       <Filter>Engine\Core</Filter>
     </ClInclude>
     <ClInclude Include="Renderer.h">
@@ -50,13 +127,86 @@
       <Filter>Engine\Utility</Filter>
     </ClInclude>
     <ClInclude Include="Transform.h">
-      <Filter>Engine\Game Object Components</Filter>
+      <Filter>Engine\Game Objects\Game Object Components</Filter>
     </ClInclude>
-    <ClInclude Include="ObjFactory.h" />
     <ClInclude Include="Mesh.h">
-      <Filter>Engine\Game Object Components</Filter>
+      <Filter>Engine\Game Objects\Game Object Components</Filter>
     </ClInclude>
-    <ClInclude Include="GameObject.h" />
+    <ClInclude Include="Material.h">
+      <Filter>Engine\Game Objects\Game Object Components</Filter>
+    </ClInclude>
+    <ClInclude Include="GameObject.h">
+      <Filter>Engine\Game Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="Camera.h">
+      <Filter>Engine\Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="DirectionalLight.h">
+      <Filter>Engine\Rendering\Lights</Filter>
+    </ClInclude>
+    <ClInclude Include="Light.h">
+      <Filter>Engine\Rendering\Lights</Filter>
+    </ClInclude>
+    <ClInclude Include="PointLight.h">
+      <Filter>Engine\Rendering\Lights</Filter>
+    </ClInclude>
+    <ClInclude Include="MaterialLibrary.h">
+      <Filter>Engine\Helper Libraries</Filter>
+    </ClInclude>
+    <ClInclude Include="ObjLibrary.h">
+      <Filter>Engine\Helper Libraries</Filter>
+    </ClInclude>
+    <ClInclude Include="Text.h">
+      <Filter>Engine\Rendering\Text</Filter>
+    </ClInclude>
+    <ClInclude Include="InputHandler.h">
+      <Filter>Engine\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="MeshLibrary.h">
+      <Filter>Engine\Helper Libraries</Filter>
+    </ClInclude>
+    <ClInclude Include="BoundingBox.h">
+      <Filter>Engine\Game Objects\Game Object Components</Filter>
+    </ClInclude>
+    <ClInclude Include="Bullet.h">
+      <Filter>Engine\Game Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="TargetBox.h">
+      <Filter>Engine\Game Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="Player.h">
+      <Filter>Engine\Game Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="CollisionHandler.h">
+      <Filter>Engine\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="UIPanel.h">
+      <Filter>Engine\Core\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="UI.h">
+      <Filter>Engine\Core\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="TypeHelpers.h">
+      <Filter>Engine\Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="World.h">
+      <Filter>Engine\Core\Game</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Core\Time.h">
+      <Filter>Engine\Core\Game</Filter>
+    </ClInclude>
+    <ClInclude Include="Game.h">
+      <Filter>Engine\Core\Game</Filter>
+    </ClInclude>
+    <ClInclude Include="Skybox.h">
+      <Filter>Engine\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Collectible.h">
+      <Filter>Engine\Game Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="SoundHandler.h">
+      <Filter>Engine\Core</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Engine">
@@ -71,14 +221,33 @@
     <Filter Include="Engine\Utility">
       <UniqueIdentifier>{bbeffb4c-0bc8-4e99-917a-fc5f08e7df14}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Engine\Game Object Components">
+    <Filter Include="Engine\Game Objects">
+      <UniqueIdentifier>{7fe2ae72-a1af-4b2b-a2e0-18739de6429b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Engine\Helper Libraries">
+      <UniqueIdentifier>{621ad275-864d-4ecf-9299-7ce5594b53e6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Engine\Rendering\Lights">
+      <UniqueIdentifier>{efe900df-251e-4a59-bf6b-b4ca8f98ebd9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Engine\Rendering\Text">
+      <UniqueIdentifier>{5f236597-b462-4923-87c6-c4c426047773}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shaders">
+      <UniqueIdentifier>{83622b33-0af7-4c52-8ac7-1d3548d1c049}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Engine\Game Objects\Game Object Components">
       <UniqueIdentifier>{f525d17a-f16e-4c67-a2da-e7917555572d}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Engine\Core\Game Objects">
-      <UniqueIdentifier>{7fe2ae72-a1af-4b2b-a2e0-18739de6429b}</UniqueIdentifier>
+    <Filter Include="Engine\Core\UI">
+      <UniqueIdentifier>{35fc3708-7b77-45c8-92df-15a572b031a0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Engine\Core\Game">
+      <UniqueIdentifier>{c27e2153-7cd0-4654-a289-f6f39bff2c8d}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+    <None Include="MeshMaterial.cd" />
   </ItemGroup>
 </Project>

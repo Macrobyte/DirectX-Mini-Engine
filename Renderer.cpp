@@ -6,6 +6,50 @@
 
 #include "Engine/Core/Window.h"
 #include "ReadData.h"
+#include "GameObject.h"
+#include "Game.h"
+
+#include "UI.h"
+#include "World.h"
+#include "Camera.h"
+
+#include "Skybox.h"
+
+
+void Renderer::InitializeTextRendering()
+{
+	spriteBatch = std::make_unique<DirectX::SpriteBatch>(deviceContext);
+}
+
+void Renderer::LoadFont(std::wstring filePath)
+{
+	//std::unique_ptr<DirectX::SpriteFont> font = std::make_unique<DirectX::SpriteFont>(device, filePath.c_str());
+
+	//fonts.push_back(std::move(font));
+
+	font = std::make_unique<DirectX::SpriteFont>(device, filePath.c_str());
+}
+
+void Renderer::RenderUI()
+{
+	spriteBatch->Begin();
+	for (auto& panel : Game::GetInstance().GetUI()->GetPanels())
+	{
+		if(!panel->IsActive())
+			continue;
+
+		for (auto& text : panel->GetTextElements())
+		{
+			if(!text->IsActive())
+				continue;
+
+			//fonts[text->fontIndex]->DrawString(spriteBatch.get(), text->text.c_str(), text->position, text->color, 0, DirectX::XMFLOAT2(0, 0), text->scale);
+			font->DrawString(spriteBatch.get(), text->GetText().c_str(), text->GetPosition(), text->GetColor(), 0, DirectX::XMFLOAT2(0, 0), text->GetScale());
+		}
+
+	}
+	spriteBatch->End();
+}
 
 HRESULT Renderer::InitializeDirectX(HWND hWnd)
 {
@@ -112,34 +156,7 @@ HRESULT Renderer::InitializeDirectX(HWND hWnd)
 
 #pragma endregion
 
-#pragma region Culling
-	// Backface culling
-	D3D11_RASTERIZER_DESC rsDesc;
-	ZeroMemory(&rsDesc, sizeof(D3D11_RASTERIZER_DESC));
-	rsDesc.CullMode = D3D11_CULL_BACK;
-	rsDesc.FillMode = D3D11_FILL_SOLID;
-
-	device->CreateRasterizerState(&rsDesc, &rasterSolid);
-
-	// Frontface culling
-	rsDesc.CullMode = D3D11_CULL_FRONT;
-	device->CreateRasterizerState(&rsDesc, &rasterSkybox);
-
-	// Depth writing enabled
-	D3D11_DEPTH_STENCIL_DESC dsDesc = { 0 };
-	dsDesc.DepthEnable = true;
-	dsDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
-	dsDesc.DepthFunc = D3D11_COMPARISON_LESS;
-	device->CreateDepthStencilState(&dsDesc, &depthWriteSolid);
-
-	// Depth writing disabled
-	dsDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
-	device->CreateDepthStencilState(&dsDesc, &depthWriteSkybox);
-
-	deviceContext->RSSetState(rasterSolid);
-#pragma endregion
-
-	std::cout << "DirectX initialized" << std::endl;
+	std::cout << "DirectX Initialized" << std::endl;
 
 	return S_OK;
 }
@@ -156,36 +173,7 @@ void Renderer::InitializeViewport()
 
 	deviceContext->RSSetViewports(1, &viewPort);
 
-	std::cout << "Viewport initialized" << std::endl;
-}
-
-HRESULT Renderer::InitializePipeline()
-{
-	if (FAILED(LoadVertexShader(L"Compiled Shaders/VertexShader.cso", &vertexShader, &inputLayout)))
-	{
-		OutputDebugString(L"Failed to load vertex shader\n");
-		return E_FAIL;
-	}
-
-	if (FAILED(LoadPixelShader(L"Compiled Shaders/PixelShader.cso", &pixelShader)))
-	{
-		OutputDebugString(L"Failed to load pixel shader\n");
-		return E_FAIL;
-	}
-
-	if (FAILED(LoadVertexShader(L"Compiled Shaders/SkyboxVShader.cso", &vertexShader, &inputLayout)))
-	{
-		OutputDebugString(L"Failed to load vertex shader\n");
-		return E_FAIL;
-	}
-
-	if (FAILED(LoadPixelShader(L"Compiled Shaders/SkyboxPShader.cso", &pixelShader)))
-	{
-		OutputDebugString(L"Failed to load pixel shader\n");
-		return E_FAIL;
-	}
-
-	return S_OK;
+	std::cout << "Viewport Initialized" << std::endl;
 }
 
 HRESULT Renderer::LoadVertexShader(LPCWSTR filename, ID3D11VertexShader** vertexShader, ID3D11InputLayout** inputLayout)
@@ -197,8 +185,6 @@ HRESULT Renderer::LoadVertexShader(LPCWSTR filename, ID3D11VertexShader** vertex
 		OutputDebugString(L"Failed to create vertex shader\n");
 		return E_FAIL;
 	}
-
-	deviceContext->VSSetShader(this->vertexShader, 0, 0);
 
 	ID3D11ShaderReflection* vertexShaderReflection = NULL;
 
@@ -248,8 +234,6 @@ HRESULT Renderer::LoadVertexShader(LPCWSTR filename, ID3D11VertexShader** vertex
 		return E_FAIL;
 	}
 
-	deviceContext->IASetInputLayout(this->inputLayout);
-
 	delete[] signatureParamDesc;
 	delete[] ied;
 
@@ -267,6 +251,12 @@ HRESULT Renderer::LoadPixelShader(LPCWSTR filename, ID3D11PixelShader** pixelSha
 	}
 }
 
+void Renderer::ToggleFullscreen()
+{
+	isFullscreen = !isFullscreen;
+	swapChain->SetFullscreenState(isFullscreen, NULL);
+}
+
 HRESULT Renderer::Initialize(HWND hWnd)
 {
 	if(FAILED(InitializeDirectX(hWnd)))
@@ -276,31 +266,22 @@ HRESULT Renderer::Initialize(HWND hWnd)
 		return E_FAIL;
 	}
 
-	if (FAILED(InitializePipeline()))
-	{
-		MessageBeep(MB_ICONSTOP);
-		MessageBox(nullptr, L"Failed to initialize Pipeline", L"Critical Error!", MB_ICONERROR | MB_OK);
-		return E_FAIL;
-	}
+	InitializeTextRendering();
+
+	LoadFont(L"Textures/Rubik.spritefont");
 
 	return S_OK;
 }
 
-/**
- * \brief Release all DirectX resources
- */
 void Renderer::Release()
 {
+	if(zBuffer) zBuffer->Release();
 	if(renderTargetView) renderTargetView->Release();
 	if(swapChain) swapChain->Release();
 	if(device) device->Release();
 	if(deviceContext) deviceContext->Release();
 }
 
-
-/**
- * \brief Renders a frame
- */
 void Renderer::Render()
 {
 	deviceContext->ClearRenderTargetView(renderTargetView, DirectX::Colors::CornflowerBlue);
@@ -309,7 +290,86 @@ void Renderer::Render()
 
 	deviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-	// Objects to render go here
+	projectionMatrix = DirectX::XMMatrixPerspectiveFovLH(DirectX::XMConvertToRadians(60), Window::GetWindowWidth() / (float)Window::GetWindowHeight(), 0.1f, 100);
+
+	viewMatrix = World::GetCamera()->GetViewMatrix();
+
+	skybox->Render(deviceContext, viewMatrix, projectionMatrix);
+
+	// Increase the ambient light color over time
+	//ambientLightColor += DirectX::XMVectorSet(0.0001f, 0.0001f, 0.0001f, 0.0f);
+	//if (ambientLightColor.m128_f32[0] > 1.0f) ambientLightColor = DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
+
+	//std::cout << ambientLightColor.m128_f32[0] << std::endl;
+
+	for (auto& gameObject : World::GetGameObjects())
+	{
+		worldMatrix = gameObject->GetTransform().GetWorldMatrix();
+
+		switch (gameObject->GetMaterial()->cBufferType)
+		{
+			case CB_Lit:
+			{
+				CBufferLit cBuffer;
+				cBuffer.WVP = worldMatrix * viewMatrix * projectionMatrix;
+
+				cBuffer.ambientLightCol = World::GetAmbientLight()->GetColor(); // Ambient light
+				
+				cBuffer.directionalLightCol = World::GetDirectionalLight()->GetColor(); // Directional light
+				DirectX::XMMATRIX transpose = DirectX::XMMatrixTranspose(worldMatrix);
+				cBuffer.directionalLightDir = DirectX::XMVector3Transform(World::GetDirectionalLight()->GetLightDirection(), transpose);
+
+				
+				DirectX::XMMATRIX inverse = XMMatrixInverse(nullptr, worldMatrix);
+
+				cBuffer.pointLight.SetPosition(XMVector3Transform(World::GetPointLight()->GetPosition(), inverse));
+				cBuffer.pointLight.SetColor(World::GetPointLight()->GetColor());
+				cBuffer.pointLight.SetStrength(World::GetPointLight()->GetStrength());
+				cBuffer.pointLight.SetEnabled(World::GetPointLight()->IsEnabled());
+		
+				cBuffer.tiling = gameObject->GetMaterial()->texture->tiling;
+
+				deviceContext->UpdateSubresource(gameObject->GetMaterial()->cBuffer, 0, nullptr, &cBuffer, 0, 0);
+				break;
+			}
+
+			case CB_Unlit:
+			{
+				CBufferUnlit cBuffer;
+				cBuffer.WVP = worldMatrix * viewMatrix * projectionMatrix;
+
+				deviceContext->UpdateSubresource(gameObject->GetMaterial()->cBuffer, 0, nullptr, &cBuffer, 0, 0);
+				break;
+			}
+
+			case CB_Reflective:
+			{
+				CBufferReflective cBuffer;
+				cBuffer.WVP = worldMatrix * viewMatrix * projectionMatrix;
+				cBuffer.WV = worldMatrix * viewMatrix; // Used for reflection
+
+				cBuffer.ambientLightCol = World::GetAmbientLight()->GetColor();
+
+				cBuffer.directionalLightCol = World::GetDirectionalLight()->GetColor();
+				DirectX::XMMATRIX transpose = DirectX::XMMatrixTranspose(worldMatrix);
+				cBuffer.directionalLightDir = DirectX::XMVector3Transform(World::GetDirectionalLight()->GetLightDirection(), transpose);
+
+				deviceContext->UpdateSubresource(gameObject->GetMaterial()->cBuffer, 0, nullptr, &cBuffer, 0, 0);
+				break;
+			}
+
+		default:
+			break;
+		}
+
+
+		gameObject->GetMaterial()->SetActive(deviceContext);
+		
+		gameObject->GetMesh()->Draw();
+
+	}
+
+	RenderUI();
 
 
 	deviceContext->OMSetBlendState(alphaBlend, nullptr, 0xffffffff);

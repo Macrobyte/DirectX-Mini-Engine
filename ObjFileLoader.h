@@ -10,7 +10,6 @@
 #include <string>
 #include <vector>
 using namespace std;
-using namespace DirectX;
 
 
 struct xyz { float x, y, z; };	//used for vertices and normals during file parse
@@ -30,10 +29,6 @@ struct Obj
 class ObjFileLoader
 {
 private:
-	ID3D11Device*           pD3DDevice;
-	ID3D11DeviceContext*    pImmediateContext;
-
-//////////////////////////////////////////////////
 
 	bool LoadFile(char* fname);
 
@@ -41,7 +36,6 @@ private:
 	long fbuffersize; // filesize
 	size_t actualsize; // actual size of loaded data (can be less if loading as text files as ASCII CR (0d) are stripped out)
 
-//////////////////////////////////////////////////
 
 	void ParseFile(string filename);
 	bool getnextline() ;
@@ -49,27 +43,18 @@ private:
 
 	unsigned int  tokenptr;
 
-//////////////////////////////////////////////////
-
-	bool createVB();
-
-	ID3D11Buffer* pVertexBuffer; 
 
 public:
-	ObjFileLoader(char* filename, ID3D11Device* device, ID3D11DeviceContext* context);
 	ObjFileLoader(char* filename, Obj& objOut);
 	~ObjFileLoader();
-
-	// Map of loaded models
-	static map<std::string, Obj*> loadedModels;
 
 	// Define model vertex structure
 	struct MODEL_POS_COL_TEX_NORM_VERTEX
 	{
-		XMFLOAT3 Pos;
-		XMFLOAT4 Col;
-		XMFLOAT2 TexCoord;
-		XMFLOAT3 Normal;
+		DirectX::XMFLOAT3 Pos;
+		DirectX::XMFLOAT4 Col;
+		DirectX::XMFLOAT2 TexCoord;
+		DirectX::XMFLOAT3 Normal;
 	};
 
 	//string filename;
@@ -86,7 +71,7 @@ public:
 	MODEL_POS_COL_TEX_NORM_VERTEX* vertices;
 	unsigned int numverts;
 
-	void Draw(void);
+
 };
 
 
