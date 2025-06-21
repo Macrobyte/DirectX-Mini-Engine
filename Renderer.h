@@ -1,11 +1,11 @@
 #pragma once
 #include <d3d11.h>
 #include <DirectXMath.h>
-#include "Singleton.h"
+#include "./Engine/Utility/Singleton.h"
 #include <vector>
 #include <string>
 #include <SpriteFont.h>
-#include "TypeHelpers.h"
+#include "./Engine/Utility/TypeHelpers.h"
 
 #define MAX_POINT_LIGHTS 4
 

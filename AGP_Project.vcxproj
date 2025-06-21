@@ -143,6 +143,7 @@
     <ClCompile Include="DirectionalLight.cpp" />
     <ClCompile Include="Engine\Core\Time.cpp" />
     <ClCompile Include="Engine\Core\Window.cpp" />
+    <ClCompile Include="Engine\Utility\ObjFileLoader.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="GameObject.cpp" />
     <ClCompile Include="InputHandler.cpp" />
@@ -153,7 +154,6 @@
     <ClCompile Include="Mesh.cpp" />
     <ClCompile Include="MeshLibrary.cpp" />
     <ClCompile Include="ObjLibrary.cpp" />
-    <ClCompile Include="ObjFileLoader.cpp" />
     <ClCompile Include="Player.cpp" />
     <ClCompile Include="PointLight.cpp" />
     <ClCompile Include="Renderer.cpp" />
@@ -175,6 +175,10 @@
     <ClInclude Include="DirectionalLight.h" />
     <ClInclude Include="Engine\Core\Time.h" />
     <ClInclude Include="Engine\Core\Window.h" />
+    <ClInclude Include="Engine\Utility\ObjFileLoader.h" />
+    <ClInclude Include="Engine\Utility\ReadData.h" />
+    <ClInclude Include="Engine\Utility\Singleton.h" />
+    <ClInclude Include="Engine\Utility\TypeHelpers.h" />
     <ClInclude Include="Game.h" />
     <ClInclude Include="GameObject.h" />
     <ClInclude Include="InputHandler.h" />
@@ -184,7 +188,6 @@
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="MeshLibrary.h" />
     <ClInclude Include="ObjLibrary.h" />
-    <ClInclude Include="ObjFileLoader.h" />
     <ClInclude Include="Player.h" />
     <ClInclude Include="PointLight.h" />
     <ClInclude Include="ReadData.h" />
@@ -277,6 +280,11 @@
   <ItemGroup>
     <None Include="MeshMaterial.cd" />
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="DirectXTK\DirectXTK_Desktop_2022.vcxproj">
+      <Project>{e0b52ae7-e160-4d32-bf3f-910b785e5a8e}</Project>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

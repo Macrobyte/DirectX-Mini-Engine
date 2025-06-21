@@ -1,6 +1,6 @@
 #pragma once
 #include "Light.h"
-#include "TypeHelpers.h"
+#include "./Engine/Utility/TypeHelpers.h"
 
 class DirectionalLight : public Light
 {

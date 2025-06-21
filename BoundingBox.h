@@ -1,5 +1,5 @@
 #pragma once
-#include "TypeHelpers.h"
+#include "./Engine/Utility/TypeHelpers.h"
 #include <functional>
 #include "Transform.h"
 #include <iostream>

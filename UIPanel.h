@@ -1,5 +1,5 @@
 #pragma once
-#include "TypeHelpers.h"
+#include "./Engine/Utility/TypeHelpers.h"
 #include "Text.h"
 #include <vector>
 #include <map>

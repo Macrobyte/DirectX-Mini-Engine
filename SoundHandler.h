@@ -1,9 +1,9 @@
 #pragma once
-#include "Singleton.h"
+#include "./Engine/Utility/Singleton.h"
 #include "Audio.h"
 #include <memory>
 #include <map>
-#include "TypeHelpers.h"
+#include "./Engine/Utility/TypeHelpers.h"
 
 class SoundHandler : public Singleton<SoundHandler>
 {

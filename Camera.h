@@ -1,6 +1,6 @@
 #pragma once
 #include "SimpleMath.h"
-#include "TypeHelpers.h"
+#include "./Engine/Utility/TypeHelpers.h"
 
 class Camera
 {

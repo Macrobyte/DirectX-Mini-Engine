@@ -2,6 +2,10 @@
 #include "SimpleMath.h"
 #include <DirectXColors.h>
 
+Text::Text()
+{
+}
+
 Text::Text(Vector2 pos, std::wstring text)
 {
 	position = pos;

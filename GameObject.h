@@ -2,7 +2,7 @@
 #include "Mesh.h"
 #include "Transform.h"
 #include "Material.h"
-#include "TypeHelpers.h"
+#include "./Engine/Utility/TypeHelpers.h"
 
 
 enum Tag

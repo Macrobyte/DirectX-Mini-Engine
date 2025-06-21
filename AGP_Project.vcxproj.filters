@@ -28,9 +28,6 @@
     <ClCompile Include="Renderer.cpp">
       <Filter>Engine\Rendering</Filter>
     </ClCompile>
-    <ClCompile Include="ObjFileLoader.cpp">
-      <Filter>Engine\Utility</Filter>
-    </ClCompile>
     <ClCompile Include="Transform.cpp">
       <Filter>Engine\Game Objects\Game Object Components</Filter>
     </ClCompile>
@@ -109,6 +106,7 @@
     <ClCompile Include="SoundHandler.cpp">
       <Filter>Engine\Core</Filter>
     </ClCompile>
+    <ClCompile Include="Engine\Utility\ObjFileLoader.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Engine\Core\Window.h">
@@ -116,9 +114,6 @@
     </ClInclude>
     <ClInclude Include="Renderer.h">
       <Filter>Engine\Rendering</Filter>
-    </ClInclude>
-    <ClInclude Include="ObjFileLoader.h">
-      <Filter>Engine\Utility</Filter>
     </ClInclude>
     <ClInclude Include="ReadData.h">
       <Filter>Engine\Utility</Filter>
@@ -207,6 +202,10 @@
     <ClInclude Include="SoundHandler.h">
       <Filter>Engine\Core</Filter>
     </ClInclude>
+    <ClInclude Include="Engine\Utility\ObjFileLoader.h" />
+    <ClInclude Include="Engine\Utility\ReadData.h" />
+    <ClInclude Include="Engine\Utility\Singleton.h" />
+    <ClInclude Include="Engine\Utility\TypeHelpers.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Engine">
