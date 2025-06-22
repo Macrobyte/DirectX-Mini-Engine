@@ -1,7 +1,7 @@
 #pragma comment(lib, "dxguid.lib")
 
 #include <iostream>
-#include "Game.h"
+#include "Engine\Core\Game\Game.h"
 
 
 // Console window for debug output

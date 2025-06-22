@@ -135,150 +135,77 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="BoundingBox.cpp" />
-    <ClCompile Include="Bullet.cpp" />
-    <ClCompile Include="Camera.cpp" />
-    <ClCompile Include="Collectible.cpp" />
-    <ClCompile Include="CollisionHandler.cpp" />
-    <ClCompile Include="DirectionalLight.cpp" />
-    <ClCompile Include="Engine\Core\Time.cpp" />
+    <ClCompile Include="Engine\Core\CollisionHandler.cpp" />
+    <ClCompile Include="Engine\Core\Game\Game.cpp" />
+    <ClCompile Include="Engine\Core\Game\Time.cpp" />
+    <ClCompile Include="Engine\Core\Game\World.cpp" />
+    <ClCompile Include="Engine\Core\InputHandler.cpp" />
+    <ClCompile Include="Engine\Core\Skybox.cpp" />
+    <ClCompile Include="Engine\Core\SoundHandler.cpp" />
+    <ClCompile Include="Engine\Core\UI\UI.cpp" />
+    <ClCompile Include="Engine\Core\UI\UIPanel.cpp" />
     <ClCompile Include="Engine\Core\Window.cpp" />
+    <ClCompile Include="Engine\GameObjects\Bullet.cpp" />
+    <ClCompile Include="Engine\GameObjects\Collectible.cpp" />
+    <ClCompile Include="Engine\GameObjects\Components\BoundingBox.cpp" />
+    <ClCompile Include="Engine\GameObjects\Components\Material.cpp" />
+    <ClCompile Include="Engine\GameObjects\Components\Mesh.cpp" />
+    <ClCompile Include="Engine\GameObjects\Components\Transform.cpp" />
+    <ClCompile Include="Engine\GameObjects\GameObject.cpp" />
+    <ClCompile Include="Engine\GameObjects\Player.cpp" />
+    <ClCompile Include="Engine\GameObjects\PointLightObject.cpp" />
+    <ClCompile Include="Engine\GameObjects\TargetBox.cpp" />
+    <ClCompile Include="Engine\Helper Libraries\MaterialLibrary.cpp" />
+    <ClCompile Include="Engine\Helper Libraries\MeshLibrary.cpp" />
+    <ClCompile Include="Engine\Helper Libraries\ObjLibrary.cpp" />
+    <ClCompile Include="Engine\ObjFactory.cpp" />
+    <ClCompile Include="Engine\Rendering\Camera.cpp" />
+    <ClCompile Include="Engine\Rendering\Lights\DirectionalLight.cpp" />
+    <ClCompile Include="Engine\Rendering\Lights\Light.cpp" />
+    <ClCompile Include="Engine\Rendering\Lights\PointLight.cpp" />
+    <ClCompile Include="Engine\Rendering\Renderer.cpp" />
+    <ClCompile Include="Engine\Rendering\Text\Text.cpp" />
     <ClCompile Include="Engine\Utility\ObjFileLoader.cpp" />
-    <ClCompile Include="Game.cpp" />
-    <ClCompile Include="GameObject.cpp" />
-    <ClCompile Include="InputHandler.cpp" />
-    <ClCompile Include="Light.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="Material.cpp" />
-    <ClCompile Include="MaterialLibrary.cpp" />
-    <ClCompile Include="Mesh.cpp" />
-    <ClCompile Include="MeshLibrary.cpp" />
-    <ClCompile Include="ObjLibrary.cpp" />
-    <ClCompile Include="Player.cpp" />
-    <ClCompile Include="PointLight.cpp" />
-    <ClCompile Include="Renderer.cpp" />
-    <ClCompile Include="Skybox.cpp" />
-    <ClCompile Include="SoundHandler.cpp" />
-    <ClCompile Include="TargetBox.cpp" />
-    <ClCompile Include="Text.cpp" />
-    <ClCompile Include="Transform.cpp" />
-    <ClCompile Include="UI.cpp" />
-    <ClCompile Include="UIPanel.cpp" />
-    <ClCompile Include="World.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="BoundingBox.h" />
-    <ClInclude Include="Bullet.h" />
-    <ClInclude Include="Camera.h" />
-    <ClInclude Include="Collectible.h" />
-    <ClInclude Include="CollisionHandler.h" />
-    <ClInclude Include="DirectionalLight.h" />
-    <ClInclude Include="Engine\Core\Time.h" />
+    <ClInclude Include="Engine\Core\CollisionHandler.h" />
+    <ClInclude Include="Engine\Core\Game\Game.h" />
+    <ClInclude Include="Engine\Core\Game\Time.h" />
+    <ClInclude Include="Engine\Core\Game\World.h" />
+    <ClInclude Include="Engine\Core\InputHandler.h" />
+    <ClInclude Include="Engine\Core\Skybox.h" />
+    <ClInclude Include="Engine\Core\SoundHandler.h" />
+    <ClInclude Include="Engine\Core\UI\UI.h" />
+    <ClInclude Include="Engine\Core\UI\UIPanel.h" />
     <ClInclude Include="Engine\Core\Window.h" />
+    <ClInclude Include="Engine\GameObjects\Bullet.h" />
+    <ClInclude Include="Engine\GameObjects\Collectible.h" />
+    <ClInclude Include="Engine\GameObjects\Components\BoundingBox.h" />
+    <ClInclude Include="Engine\GameObjects\Components\Material.h" />
+    <ClInclude Include="Engine\GameObjects\Components\Mesh.h" />
+    <ClInclude Include="Engine\GameObjects\Components\Transform.h" />
+    <ClInclude Include="Engine\GameObjects\GameObject.h" />
+    <ClInclude Include="Engine\GameObjects\Player.h" />
+    <ClInclude Include="Engine\GameObjects\PointLightObject.h" />
+    <ClInclude Include="Engine\GameObjects\TargetBox.h" />
+    <ClInclude Include="Engine\Helper Libraries\MaterialLibrary.h" />
+    <ClInclude Include="Engine\Helper Libraries\MeshLibrary.h" />
+    <ClInclude Include="Engine\Helper Libraries\ObjLibrary.h" />
+    <ClInclude Include="Engine\ObjFactory.h" />
+    <ClInclude Include="Engine\Rendering\Camera.h" />
+    <ClInclude Include="Engine\Rendering\Lights\DirectionalLight.h" />
+    <ClInclude Include="Engine\Rendering\Lights\Light.h" />
+    <ClInclude Include="Engine\Rendering\Lights\PointLight.h" />
+    <ClInclude Include="Engine\Rendering\Renderer.h" />
+    <ClInclude Include="Engine\Rendering\Text\Text.h" />
     <ClInclude Include="Engine\Utility\ObjFileLoader.h" />
     <ClInclude Include="Engine\Utility\ReadData.h" />
     <ClInclude Include="Engine\Utility\Singleton.h" />
     <ClInclude Include="Engine\Utility\TypeHelpers.h" />
-    <ClInclude Include="Game.h" />
-    <ClInclude Include="GameObject.h" />
-    <ClInclude Include="InputHandler.h" />
-    <ClInclude Include="Light.h" />
-    <ClInclude Include="Material.h" />
-    <ClInclude Include="MaterialLibrary.h" />
-    <ClInclude Include="Mesh.h" />
-    <ClInclude Include="MeshLibrary.h" />
-    <ClInclude Include="ObjLibrary.h" />
-    <ClInclude Include="Player.h" />
-    <ClInclude Include="PointLight.h" />
     <ClInclude Include="ReadData.h" />
-    <ClInclude Include="Renderer.h" />
-    <ClInclude Include="Singleton.h" />
-    <ClInclude Include="Skybox.h" />
-    <ClInclude Include="SoundHandler.h" />
-    <ClInclude Include="TargetBox.h" />
-    <ClInclude Include="Text.h" />
-    <ClInclude Include="Transform.h" />
-    <ClInclude Include="TypeHelpers.h" />
-    <ClInclude Include="UI.h" />
-    <ClInclude Include="UIPanel.h" />
-    <ClInclude Include="World.h" />
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="PixelShader.hlsl">
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
-      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectDir)Compiled Shaders\%(Filename).cso</ObjectFileOutput>
-      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectDir)Compiled Shaders\%(Filename).cso</ObjectFileOutput>
-      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)Compiled Shaders\%(Filename).cso</ObjectFileOutput>
-      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)Compiled Shaders\%(Filename).cso</ObjectFileOutput>
-    </FxCompile>
-    <FxCompile Include="ReflectivePShader.hlsl">
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
-      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectDir)Compiled Shaders\%(Filename).cso</ObjectFileOutput>
-      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectDir)Compiled Shaders\%(Filename).cso</ObjectFileOutput>
-      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)Compiled Shaders\%(Filename).cso</ObjectFileOutput>
-      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)Compiled Shaders\%(Filename).cso</ObjectFileOutput>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
-    </FxCompile>
-    <FxCompile Include="ReflectiveVShader.hlsl">
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Vertex</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
-      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectDir)Compiled Shaders\%(Filename).cso</ObjectFileOutput>
-      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectDir)Compiled Shaders\%(Filename).cso</ObjectFileOutput>
-      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)Compiled Shaders\%(Filename).cso</ObjectFileOutput>
-      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)Compiled Shaders\%(Filename).cso</ObjectFileOutput>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
-    </FxCompile>
-    <FxCompile Include="SkyboxPShader.hlsl">
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
-      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)Compiled Shaders\%(Filename).cso</ObjectFileOutput>
-    </FxCompile>
-    <FxCompile Include="SkyboxVShader.hlsl">
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Vertex</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
-      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)Compiled Shaders\%(Filename).cso</ObjectFileOutput>
-    </FxCompile>
-    <FxCompile Include="VertexShader.hlsl">
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Vertex</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
-      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectDir)Compiled Shaders\%(Filename).cso</ObjectFileOutput>
-      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectDir)Compiled Shaders\%(Filename).cso</ObjectFileOutput>
-      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)Compiled Shaders\%(Filename).cso</ObjectFileOutput>
-      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)Compiled Shaders\%(Filename).cso</ObjectFileOutput>
-    </FxCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="MeshMaterial.cd" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>

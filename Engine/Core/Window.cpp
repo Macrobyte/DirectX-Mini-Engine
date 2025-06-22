@@ -1,6 +1,6 @@
 #include "Window.h"
-#include "../../InputHandler.h"
-#include "../../Renderer.h"
+#include "../Core/InputHandler.h"
+#include "../Rendering/Renderer.h"
 
 HINSTANCE Window::hInstance = NULL;
 HWND Window::hWnd = NULL;
