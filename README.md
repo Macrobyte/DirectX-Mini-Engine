@@ -2,7 +2,7 @@
 
 [![Platform](https://img.shields.io/badge/platform-Windows-0078D7?style=for-the-badge&logo=windows)](#)
 [![Made with](https://img.shields.io/badge/made%20with-DirectXTK-purple?style=for-the-badge)](#)
-[![Release](https://img.shields.io/github/v/release/Macrobyte/Graphics-Programming?style=for-the-badge&logo=github)](https://github.com/Macrobyte/Graphics-Programming/releases)
+[![GitHub Release](https://img.shields.io/github/v/release/Macrobyte/Graphics-Programming?style=for-the-badge&logo=github&label=release)](https://github.com/Macrobyte/Graphics-Programming/releases)
 [![License](https://img.shields.io/badge/license-MIT-lightgrey?style=for-the-badge)](#)
 
 A small graphics programming project / tech demo built with **DirectX 11** and **DirectXTK**.  
