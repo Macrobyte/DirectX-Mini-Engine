@@ -1,31 +1,30 @@
-# DirectX Mini Engine 🎮
+# DirectX Mini Engine
 
 [![Platform](https://img.shields.io/badge/platform-Windows-0078D7?style=for-the-badge&logo=windows)](#)
 [![Made with](https://img.shields.io/badge/made%20with-DirectXTK-purple?style=for-the-badge)](#)
 [![GitHub Release](https://img.shields.io/github/v/release/Macrobyte/Graphics-Programming?style=for-the-badge&logo=github&label=release)](https://github.com/Macrobyte/Graphics-Programming/releases)
-[![License](https://img.shields.io/badge/license-MIT-lightgrey?style=for-the-badge)](#)
 
 A small graphics programming project / tech demo built with **DirectX 11** and **DirectXTK**.  
 Features a basic rendering loop, simple UI, object interaction, and physics-based shooting mechanics.
 
-## ✨ Features
+## Features
 - DirectX 11 rendering
 - Scene with shootable boxes
 - Collectible objects
 - Simple UI elements
 - Modular code structure
 
-## 🔧 Tech Stack
+## Technologies Used
 - C++
 - DirectX 11
 - DirectX Tool Kit (DirectXTK)
 
-## 📸 Screenshot
+## Screenshot
 <p align="center">
   <img src="https://github.com/user-attachments/assets/f6bb0438-2744-4374-9481-7e95fbb3d668" width="720"/>
 </p>
 
-## 🚀 Getting Started
+## Instructions
 ### If you want to explore the code:
 1. Clone the repository:
    ```bash
